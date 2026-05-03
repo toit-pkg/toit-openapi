@@ -1,0 +1,52 @@
+sdk: ^2.0.0-alpha.190
+prefixes:
+  fs: pkg-fs
+  host: pkg-host
+  json-pointer: toit-json-pointer
+  json-schema: toit-json-schema
+  mustache: toit-mustache
+packages:
+  pkg-fs:
+    url: github.com/toitlang/pkg-fs
+    name: fs
+    version: 2.3.1
+    hash: 60836d4500317af2093d59d50c117d612c33f1fa
+    prefixes:
+      host: pkg-host
+  pkg-host:
+    url: github.com/toitlang/pkg-host
+    name: host
+    version: 1.17.0
+    hash: 05a26b5fa1cc73dc64a5e9cc16c40ae5aa24e0fb
+  pkg-http:
+    url: github.com/toitlang/pkg-http
+    name: http
+    version: 2.12.0
+    hash: b68f3f4a3c26bfdff2beca4fb5ac7bc182f20270
+  toit-cert-roots:
+    url: github.com/toitware/toit-cert-roots
+    name: certificate-roots
+    version: 1.11.0
+    hash: c117dbba4757d7c69e91af7a875ab6989f051a33
+  toit-gen:
+    path: ../toit-gen
+    prefixes:
+      fs: pkg-fs
+      host: pkg-host
+  toit-json-pointer:
+    url: github.com/toitware/toit-json-pointer
+    name: json-pointer
+    version: 1.1.0
+    hash: 4a6e180301d331831d67b514cc893f66a60f0d8e
+  toit-json-schema:
+    path: ../toit-json-schema
+    prefixes:
+      certificate-roots: toit-cert-roots
+      http: pkg-http
+      json-pointer: toit-json-pointer
+      toit-gen: toit-gen
+  toit-mustache:
+    url: github.com/toitware/toit-mustache
+    name: mustache
+    version: 1.0.1
+    hash: 5ea517435f5b85864c36f69f87b0dc0a46fc3eaa

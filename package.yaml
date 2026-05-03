@@ -1,0 +1,15 @@
+dependencies:
+  fs:
+    url: github.com/toitlang/pkg-fs
+    version: ^2.3.1
+  host:
+    url: github.com/toitlang/pkg-host
+    version: ^1.17.0
+  json-pointer:
+    url: github.com/toitware/toit-json-pointer
+    version: ^1.1.0
+  json-schema:
+    path: ../toit-json-schema
+  mustache:
+    url: github.com/toitware/toit-mustache
+    version: ^1.0.1
