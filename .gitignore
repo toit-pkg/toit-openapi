@@ -1,4 +1,9 @@
 .packages/
+build/
 node_modules/
 .agent/
 .claude/
+
+# Pet store fixtures are downloaded by tests/pet-store/download.sh.
+tests/pet-store/store.yaml
+tests/pet-store/bigger.yaml

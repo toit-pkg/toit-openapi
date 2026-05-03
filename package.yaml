@@ -1,3 +1,5 @@
+environment:
+  sdk: ^2.0.0-alpha.192
 dependencies:
   fs:
     url: github.com/toitlang/pkg-fs
@@ -13,3 +15,5 @@ dependencies:
   mustache:
     url: github.com/toitware/toit-mustache
     version: ^1.0.1
+  toit-gen:
+    path: ../toit-gen

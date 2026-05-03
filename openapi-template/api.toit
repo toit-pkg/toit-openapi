@@ -1,21 +1,22 @@
 import http
+import io
 import net
-import openapi
+import openapi-runtime
 
 // MUSTACHE: {{#NOT_EXIST}}
-interface Type:
+interface Type extends io.Data:
 // MUSTACHE: {{/NOT_EXIST}}
 
 // MUSTACHE: X-ServiceName-x={{api-name}} provided by the user not the document.
 class X-ServiceName-x:
-  api-client_/openapi.ApiClient? := ?
+  api-client_/openapi-runtime.ApiClient? := ?
 
-  constructor --api-client/openapi.ApiClient:
+  constructor --api-client/openapi-runtime.ApiClient:
     api-client_ = api-client
 
   constructor network/net.Client:
     // TODO(florian): provide base-path.
-    api-client_ = openapi.ApiClient network --base-path=""
+    api-client_ = openapi-runtime.ApiClient network --base-path=""
 
   close -> none:
     if not api-client_: return
@@ -35,9 +36,9 @@ class X-ServiceName-x:
 // MUSTACHE: {{#apis}} Enter apis.
 // MUSTACHE: X-ApiClassName-x={{class-name}}
 class X-ApiClassName-x:
-  authentication/openapi.Authentication?
+  authentication/openapi-runtime.Authentication?
 
-  api-client_/openapi.ApiClient
+  api-client_/openapi-runtime.ApiClient
   // group_/GroupedApi? := null
 
   constructor .api-client_
@@ -86,7 +87,7 @@ class X-ApiClassName-x:
       path = path.replace --all "{$("x-orig-arg-x")}" "$x-op-arg-x"
       // MUSTACHE: {{/in-path}}
       // MUSTACHE: {{#in-query}}
-      query-params.add-all (openapi.encode-query-param
+      query-params.add-all (openapi-runtime.encode-query-param
         "x-orig-arg-x"
         x-op-arg-x
         // MUSTACHE: {{#style}}
@@ -99,7 +100,7 @@ class X-ApiClassName-x:
       )
       // MUSTACHE: {{/in-query}}
       // MUSTACHE: {{#in-header}}
-      openapi.encode-header-param headers "x-orig-arg-x" x-op-arg-x
+      openapi-runtime.encode-header-param headers "x-orig-arg-x" x-op-arg-x
       // MUSTACHE: {{/in-header}}
       // MUSTACHE: {{#in-cookie}}
       cookie-params.add "x-orig-arg-x=$x-op-arg-x"

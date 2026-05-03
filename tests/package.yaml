@@ -1,0 +1,6 @@
+dependencies:
+  json-pointer:
+    url: github.com/toitware/toit-json-pointer
+    version: ^1.1.0
+  openapi-gen:
+    path: ..

@@ -2,19 +2,18 @@ import encoding.yaml
 import fs
 import host.file
 import host.directory
-import io
 import json-schema
 import json-schema.schema as json-schema
 import json-schema.action as schema-action
 import mustache
-import namer
 import system
+import toit-gen.namer as namer
 
 import .openapi
 
 class Namer:
   unique_ name/string [block] -> string:
-    return namer.unique name --is-reserved=block
+    return namer.unique name --is-free=: not (block.call it)
 
   toit-local-name_ name/string -> string:
     return namer.toit-local-name name
@@ -126,10 +125,8 @@ class JsonSchemaGenerator:
     if json-schema.is-reference-only:
       target-uri := json-schema.reference-target-uri
       // TODO(florian): avoid name clashes.
-      print target-uri.fragment
       json-schema-name := (target-uri.fragment.split "%2F").last
       name = namer.toit-class-name_ json-schema-name
-      print "ref-only: $name"
 
     referenced-schemas[json-schema] = name
     return name
@@ -268,18 +265,54 @@ class OpenApiGenerator:
       "has-cookie-params": has-cookie-params,
     }
 
+/**
+Locates the api.toit template shipped with the generator.
+
+Looks next to the running program first (the typical layout for a
+  compiled binary), then one level up (the layout when running with
+  `toit run src/openapi-gen.toit`).
+*/
+find-default-template_ -> string?:
+  candidates := [
+    fs.join (fs.dirname system.program-path) "openapi-template" "api.toit",
+    fs.join (fs.dirname (fs.dirname system.program-path)) "openapi-template" "api.toit",
+  ]
+  candidates.do: | candidate/string |
+    if file.is-file candidate: return candidate
+  return null
+
 main args/List:
-  if args.size != 2:
-    print "Usage: openapi-to-toit <openapi.yaml> <output-dir>"
+  template-path/string? := null
+  positional := []
+  i := 0
+  while i < args.size:
+    arg := args[i]
+    if arg == "--template" or arg == "-t":
+      if i + 1 >= args.size:
+        print "Missing value for $arg"
+        return
+      template-path = args[i + 1]
+      i += 2
+    else:
+      positional.add arg
+      i++
+
+  if positional.size != 2:
+    print "Usage: openapi-gen [--template <api.toit>] <openapi.yaml> <output-dir>"
     return
-  openapi := build (yaml.decode (file.read-content args[0]))
+
+  if not template-path: template-path = find-default-template_
+  if not template-path or not file.is-file template-path:
+    print "Could not locate the api.toit template. Pass it explicitly with --template."
+    return
+
+  openapi := build (yaml.decode (file.read-contents positional[0]))
   json-schema-gen := JsonSchemaGenerator
-  open-api-gen := OpenApiGenerator --base-dir=args[1] --json-schema-gen=json-schema-gen
+  open-api-gen := OpenApiGenerator --base-dir=positional[1] --json-schema-gen=json-schema-gen
   context := open-api-gen.gen openapi
-  dir := fs.dirname system.program-path
-  toit-template := (file.read-content "$dir/openapi-template/api.toit").to-string
+  toit-template := (file.read-contents template-path).to-string
   mustache-template := mustache.comment-template-to-mustache toit-template
   parsed := mustache.parse mustache-template
   rendered := mustache.render parsed --input=context
-  directory.mkdir --recursive (fs.join args[1] "src")
-  file.write-content --path=(fs.join args[1] "src" "api.toit") rendered
+  directory.mkdir --recursive (fs.join positional[1] "src")
+  file.write-contents --path=(fs.join positional[1] "src" "api.toit") rendered

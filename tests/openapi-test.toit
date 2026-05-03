@@ -1,7 +1,10 @@
-import expect show *
+// Copyright (C) 2026 Toit contributors.
+// Use of this source code is governed by a BSD0-style license that can be
+// found in the tests/LICENSE file.
 
-import .openapi
+import expect show *
 import json-pointer show JsonPointer
+import openapi-gen.openapi show *
 
 /**
 All examples with section numbers are from https://spec.openapis.org/oas/v3.1.0.

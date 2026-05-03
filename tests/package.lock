@@ -1,12 +1,17 @@
-sdk: ^2.0.0-alpha.192
+sdk: ^2.0.0-alpha.190
 prefixes:
-  fs: pkg-fs
-  host: pkg-host
   json-pointer: toit-json-pointer
-  json-schema: toit-json-schema
-  mustache: toit-mustache
-  toit-gen: toit-gen
+  openapi-gen: ..
 packages:
+  ..:
+    path: ..
+    prefixes:
+      fs: pkg-fs
+      host: pkg-host
+      json-pointer: toit-json-pointer
+      json-schema: toit-json-schema
+      mustache: toit-mustache
+      toit-gen: toit-gen
   pkg-fs:
     url: github.com/toitlang/pkg-fs
     name: fs
@@ -30,7 +35,7 @@ packages:
     version: 1.11.0
     hash: c117dbba4757d7c69e91af7a875ab6989f051a33
   toit-gen:
-    path: ../toit-gen
+    path: ../../toit-gen
     prefixes:
       fs: pkg-fs
       host: pkg-host
@@ -40,7 +45,7 @@ packages:
     version: 1.1.0
     hash: 4a6e180301d331831d67b514cc893f66a60f0d8e
   toit-json-schema:
-    path: ../toit-json-schema
+    path: ../../toit-json-schema
     prefixes:
       certificate-roots: toit-cert-roots
       http: pkg-http
