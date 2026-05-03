@@ -79,7 +79,7 @@ resolve openapi/OpenApi context/BuildContext:
     context.references = []
     pending.do: | ref/Reference |
       assert: not ref.resolved_
-      resolved-uri := ref.target-uri.resolve --base=base-uri
+      resolved-uri := (ref.target-uri.resolve --base=base-uri).normalize
       target := store.get resolved-uri
       if not target:
         throw "Reference not found: $ref.target-uri"
@@ -2223,8 +2223,9 @@ class Reference implements ResponseOrReference:
 
   static parse_ o/Map context/BuildContext pointer/JsonPointer --kind/int -> Reference:
     ref := o["\$ref"]
-    normalized := (UriReference.parse ref).normalize
-    target-uri := normalized.resolve --base=context.uri
+    // Keep the literal URI so $to-json round-trips. The resolve loop
+    // resolves and normalizes the URI at lookup time.
+    target-uri := UriReference.parse ref
     reference := Reference
         --kind=kind
         --target-uri=target-uri

@@ -1,5 +1,6 @@
 sdk: ^2.0.0-alpha.190
 prefixes:
+  host: pkg-host
   json-pointer: toit-json-pointer
   openapi-gen: ..
 packages:
