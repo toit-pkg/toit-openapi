@@ -12,8 +12,5 @@ dependencies:
     version: ^1.1.0
   json-schema:
     path: ../toit-json-schema
-  mustache:
-    url: github.com/toitware/toit-mustache
-    version: ^1.0.1
   toit-gen:
     path: ../toit-gen

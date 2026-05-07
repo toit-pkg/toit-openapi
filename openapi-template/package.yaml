@@ -1,6 +1,0 @@
-dependencies:
-  http:
-    url: github.com/toitlang/pkg-http
-    version: ^2.9.0
-  openapi-runtime:
-    path: ../../toit-openapi-runtime

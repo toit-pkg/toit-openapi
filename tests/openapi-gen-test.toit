@@ -7,8 +7,6 @@ import host.directory
 import host.file
 import openapi-gen.openapi-gen as gen
 
-TEMPLATE-PATH ::= "openapi-template/api.toit"
-
 main:
   test-generates "tests/pet-store/store.yaml" --expected-classes=["Api", "PetsApi"]
   test-generates "tests/pet-store/bigger.yaml"
@@ -17,7 +15,7 @@ main:
 test-generates spec-path/string --expected-classes/List:
   tmp-dir := directory.mkdtemp "/tmp/openapi-gen-test-"
   try:
-    gen.main ["--template", TEMPLATE-PATH, spec-path, tmp-dir]
+    gen.main [spec-path, tmp-dir]
     api-path := "$tmp-dir/src/api.toit"
     expect (file.is-file api-path) --message="generator did not write $api-path"
     contents := (file.read-contents api-path).to-string

@@ -11,7 +11,6 @@ packages:
       host: pkg-host
       json-pointer: toit-json-pointer
       json-schema: toit-json-schema
-      mustache: toit-mustache
       toit-gen: toit-gen
   pkg-fs:
     url: github.com/toitlang/pkg-fs
@@ -52,8 +51,3 @@ packages:
       http: pkg-http
       json-pointer: toit-json-pointer
       toit-gen: toit-gen
-  toit-mustache:
-    url: github.com/toitware/toit-mustache
-    name: mustache
-    version: 1.0.1
-    hash: 5ea517435f5b85864c36f69f87b0dc0a46fc3eaa

@@ -7,7 +7,7 @@ This package contains:
 - `src/openapi.toit` — an in-memory model and parser for OpenAPI 3.1 documents,
   built on top of `json-schema` and `json-pointer`.
 - `src/openapi-gen.toit` — a CLI that consumes an OpenAPI document and emits a
-  Toit client library by rendering `openapi-template/api.toit` with mustache.
+  Toit client library, built on top of the `toit-gen` AST builder.
 - The generated client uses the
   [openapi-runtime](https://github.com/toitware/toit-openapi-runtime) package
   for its HTTP/auth runtime.
