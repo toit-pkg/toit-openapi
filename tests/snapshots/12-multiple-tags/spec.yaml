@@ -1,0 +1,19 @@
+openapi: 3.1.0
+info:
+  title: Multiple Tags
+  version: 1.0.0
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      tags: [pets]
+      responses:
+        '200':
+          description: OK
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      responses:
+        '200':
+          description: OK

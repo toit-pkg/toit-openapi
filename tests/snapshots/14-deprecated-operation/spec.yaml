@@ -1,0 +1,13 @@
+openapi: 3.1.0
+info:
+  title: Deprecated Operation
+  version: 1.0.0
+paths:
+  /old:
+    get:
+      operationId: oldEndpoint
+      tags: [items]
+      deprecated: true
+      responses:
+        '200':
+          description: OK

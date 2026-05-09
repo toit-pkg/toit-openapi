@@ -1,0 +1,18 @@
+openapi: 3.1.0
+info:
+  title: Post No Body
+  version: 1.0.0
+paths:
+  /items/{itemId}/touch:
+    post:
+      operationId: touchItem
+      tags: [items]
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: No Content

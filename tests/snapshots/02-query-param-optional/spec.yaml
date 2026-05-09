@@ -1,0 +1,18 @@
+openapi: 3.1.0
+info:
+  title: Query Param Optional
+  version: 1.0.0
+paths:
+  /search:
+    get:
+      operationId: search
+      tags: [items]
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK

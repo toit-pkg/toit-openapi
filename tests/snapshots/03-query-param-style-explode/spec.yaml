@@ -1,0 +1,22 @@
+openapi: 3.1.0
+info:
+  title: Query Param Style Explode
+  version: 1.0.0
+paths:
+  /search:
+    get:
+      operationId: search
+      tags: [items]
+      parameters:
+        - name: tags
+          in: query
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: OK
