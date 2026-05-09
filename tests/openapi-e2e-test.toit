@@ -3,6 +3,7 @@
 // found in the tests/LICENSE file.
 
 import expect show *
+import encoding.json
 import http
 import openapi-runtime
 
@@ -13,6 +14,8 @@ import .e2e.header-param.api as header-param
 import .e2e.cookie-param.api as cookie-param
 import .e2e.post-binary-body.api as post-binary-body
 import .e2e.multi-tag.api as multi-tag
+import .e2e.components-schema.api as components-schema
+import .e2e.components-schema.models as components-schema-models
 
 main:
   test-get-with-query
@@ -21,6 +24,7 @@ main:
   test-cookie-param
   test-post-binary-body
   test-multi-tag-and-close
+  test-components-schema-round-trip
 
 /**
 Builds an `ApiClient` pointed at $server's loopback address.
@@ -56,7 +60,9 @@ test-get-with-query:
     expect-equals "frog" (request.query.get "q")
     expect-equals "5" (request.query.get "limit")
 
-    // The regular variant (Phase 4 will change this) returns null.
+    // No response model in this spec, so the regular variant still
+    //   returns null (cf. test-components-schema-round-trip for the
+    //   case where it returns a deserialized model).
     server.recorded.clear
     result := api.items-api.search --q="frog"
     expect-null result
@@ -104,3 +110,26 @@ test-multi-tag-and-close:
     expect-equals "/pets" server.recorded[0].resource
     expect-equals "/users" server.recorded[1].resource
     api.close
+
+test-components-schema-round-trip:
+  with-server: | server/TestServer |
+    server.on "POST" "/pets": | response |
+      response.status = 201
+      response.body = """{"id": 7, "name": "echoed"}""".to-byte-array
+      response.headers["Content-Type"] = "application/json"
+
+    api := components-schema.Api --api-client=(make-client_ server)
+    sent := components-schema-models.Pet.from-json {"id": 1, "name": "frog"}
+
+    // Regular variant returns a Pet, having JSON-encoded the request body
+    //   and deserialized the response.
+    received := api.pets-api.create-pet sent
+    expect-equals 7 received.id
+    expect-equals "echoed" received.name
+
+    request := server.only-request
+    expect-equals "POST" request.method
+    expect-equals "/pets" request.resource
+    decoded := json.decode request.body
+    expect-equals 1 decoded["id"]
+    expect-equals "frog" decoded["name"]

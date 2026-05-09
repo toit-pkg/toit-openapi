@@ -8,11 +8,14 @@ import host.file
 import openapi-gen.openapi-gen as gen
 
 main:
-  test-generates "tests/pet-store/store.yaml" --expected-classes=["Api", "PetsApi"]
+  test-generates "tests/pet-store/store.yaml"
+      --expected-classes=["Api", "PetsApi"]
+      --expected-models=["Pet", "Error"]
   test-generates "tests/pet-store/bigger.yaml"
       --expected-classes=["Api", "PetApi", "StoreApi", "UserApi"]
+      --expected-models=["Pet", "User", "Order"]
 
-test-generates spec-path/string --expected-classes/List:
+test-generates spec-path/string --expected-classes/List --expected-models/List:
   tmp-dir := directory.mkdtemp "/tmp/openapi-gen-test-"
   try:
     gen.main [spec-path, tmp-dir]
@@ -24,5 +27,13 @@ test-generates spec-path/string --expected-classes/List:
     expected-classes.do: | cls/string |
       expect (contents.contains "class $cls")
           --message="generated api.toit is missing class $cls"
+
+    models-path := "$tmp-dir/src/models.toit"
+    expect (file.is-file models-path)
+        --message="generator did not write $models-path"
+    models-contents := (file.read-contents models-path).to-string
+    expected-models.do: | cls/string |
+      expect (models-contents.contains "class $cls")
+          --message="generated models.toit is missing class $cls"
   finally:
     directory.rmdir --recursive tmp-dir
