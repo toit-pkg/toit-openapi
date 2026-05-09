@@ -220,7 +220,7 @@ class ApiGenerator:
         toit-gen.Call (runtime_.refer api-client_)
             --arguments=[
               toit-gen.Ref network-param,
-              toit-gen.Named.named "base-path" (toit-gen.Literal ""),
+              toit-gen.Named.external "base-path" (toit-gen.Literal ""),
             ]
     api-class.add-constructor --parameters=[network-param] body2
 
