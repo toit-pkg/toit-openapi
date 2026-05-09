@@ -34,6 +34,19 @@ make test
 Some tests use Pet Store fixtures from upstream. They are downloaded on demand
 by `tests/pet-store/download.sh` (also wired into `make download-fixtures`).
 
+## Mocking a spec
+
+To drive a generated client against a mock server while you iterate on a
+spec, the easiest option is upstream Prism:
+
+```sh
+npx @stoplight/prism-cli mock path/to/openapi.yaml
+```
+
+Prism reads the spec and answers requests with examples drawn from the
+spec's response schemas. The repo's own tests use a small in-process Toit
+HTTP server instead — see [tests/e2e/server.toit](tests/e2e/server.toit).
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
