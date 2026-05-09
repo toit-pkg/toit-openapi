@@ -1,16 +1,16 @@
-import http show Response Headers
-import net show Client
-import openapi-runtime show ApiClient Authentication
+import http
+import net
+import openapi-runtime
 
 class Api:
-  api-client_/ApiClient? := ?
+  api-client_/openapi-runtime.ApiClient? := ?
   items-api_/ItemsApi? := null
 
-  constructor --api-client/ApiClient:
+  constructor --api-client/openapi-runtime.ApiClient:
     api-client_ = api-client
 
 
-  constructor network/Client:
+  constructor network/net.Client:
     api-client_ = openapi-runtime.ApiClient network --base-path=""
 
   close:
@@ -26,14 +26,14 @@ class Api:
 
 
 class ItemsApi:
-  authentication/Authentication? := null
-  api-client_/ApiClient := ?
+  authentication/openapi-runtime.Authentication? := null
+  api-client_/openapi-runtime.ApiClient := ?
 
-  constructor client/ApiClient --auth/Authentication?=null:
+  constructor client/openapi-runtime.ApiClient --auth/openapi-runtime.Authentication?=null:
     api-client_ = client
     authentication = auth
 
-  touch-item --raw/True --item-id/string -> Response:
+  touch-item --raw/True --item-id/string -> http.Response:
     path := "/items/{itemId}/touch"
     headers := http.Headers
     query-params := []

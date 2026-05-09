@@ -1,8 +1,10 @@
 sdk: ^2.0.0-alpha.190
 prefixes:
   host: pkg-host
+  http: pkg-http
   json-pointer: toit-json-pointer
   openapi-gen: ..
+  openapi-runtime: toit-openapi-runtime
 packages:
   ..:
     path: ..
@@ -51,3 +53,7 @@ packages:
       http: pkg-http
       json-pointer: toit-json-pointer
       toit-gen: toit-gen
+  toit-openapi-runtime:
+    path: ../../toit-openapi-runtime
+    prefixes:
+      http: pkg-http

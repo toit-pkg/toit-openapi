@@ -1,0 +1,19 @@
+openapi: 3.1.0
+info:
+  title: POST with binary body
+  version: 1.0.0
+paths:
+  /upload:
+    post:
+      operationId: upload
+      tags: [items]
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '204':
+          description: No Content

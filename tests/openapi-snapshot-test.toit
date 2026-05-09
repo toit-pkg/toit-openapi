@@ -9,56 +9,70 @@ import host.os
 import openapi-gen.openapi-gen as gen
 
 /**
-Iterates the snapshot fixtures under $SNAPSHOTS-DIR. For each subdirectory
+Iterates the snapshot fixtures under $SNAPSHOT-DIRS. For each subdirectory
   with a `spec.yaml`, it runs the generator and byte-compares the resulting
-  `src/api.toit` against `expected.toit`.
+  `src/api.toit` against the golden file (whose name is configured per
+  directory, see $SNAPSHOT-DIRS).
 
 When the env var `OPENAPI_UPDATE_SNAPSHOTS` is set (any non-empty value), the
-  test rewrites `expected.toit` from the generator output instead of failing.
+  test rewrites the golden from the generator output instead of failing.
   CI must never set this.
+
+Both `tests/snapshots/` and the e2e fixtures under `tests/e2e/` are checked,
+  so a drift between the committed `api.toit` used by the e2e test and what
+  the current generator produces will fail this test.
 */
 
-SNAPSHOTS-DIR ::= "tests/snapshots"
 SPEC-NAME ::= "spec.yaml"
-EXPECTED-NAME ::= "expected.toit"
 UPDATE-ENV ::= "OPENAPI_UPDATE_SNAPSHOTS"
+
+// Each entry is [directory, golden-file-name].
+SNAPSHOT-DIRS ::= [
+  ["tests/snapshots", "expected.toit"],
+  ["tests/e2e", "api.toit"],
+]
 
 main:
   update-mode := (os.env.get UPDATE-ENV) != null
-  fixtures := list-fixtures_
-  expect (not fixtures.is-empty) --message="no snapshot fixtures found in $SNAPSHOTS-DIR"
   failures := []
-  fixtures.do: | name/string |
-    spec-path := "$SNAPSHOTS-DIR/$name/$SPEC-NAME"
-    expected-path := "$SNAPSHOTS-DIR/$name/$EXPECTED-NAME"
-    expect (file.is-file spec-path) --message="missing $spec-path"
+  total := 0
+  SNAPSHOT-DIRS.do: | entry/List |
+    dir/string := entry[0]
+    golden/string := entry[1]
+    fixtures := list-fixtures_ dir
+    fixtures.do: | name/string |
+      total++
+      spec-path := "$dir/$name/$SPEC-NAME"
+      golden-path := "$dir/$name/$golden"
+      if not (file.is-file spec-path): continue.do  // Not a fixture dir.
 
-    actual := generate_ spec-path
+      actual := generate_ spec-path
 
-    if update-mode:
-      file.write-contents --path=expected-path actual
-      print "updated $expected-path"
-      continue.do
+      if update-mode:
+        file.write-contents --path=golden-path actual
+        print "updated $golden-path"
+        continue.do
 
-    if not (file.is-file expected-path):
-      failures.add "$name: missing $expected-path. Run with $UPDATE-ENV=1 to create it."
-      continue.do
+      if not (file.is-file golden-path):
+        failures.add "$dir/$name: missing $golden-path. Run with $UPDATE-ENV=1 to create it."
+        continue.do
 
-    expected := (file.read-contents expected-path).to-string
-    if expected != actual:
-      failures.add "$name: generated output does not match $expected-path. Run with $UPDATE-ENV=1 to bless."
+      expected := (file.read-contents golden-path).to-string
+      if expected != actual:
+        failures.add "$dir/$name: generated output does not match $golden-path. Run with $UPDATE-ENV=1 to bless."
 
+  expect (total > 0) --message="no snapshot fixtures found"
   if not failures.is-empty:
     failures.do: print it
     throw "snapshot mismatch"
 
-list-fixtures_ -> List:
-  if not (file.is-directory SNAPSHOTS-DIR): return []
+list-fixtures_ root/string -> List:
+  if not (file.is-directory root): return []
   result := []
-  stream := directory.DirectoryStream SNAPSHOTS-DIR
+  stream := directory.DirectoryStream root
   try:
     while name := stream.next:
-      if file.is-directory "$SNAPSHOTS-DIR/$name": result.add name
+      if file.is-directory "$root/$name": result.add name
   finally:
     stream.close
   result.sort --in-place

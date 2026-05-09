@@ -2,8 +2,13 @@ dependencies:
   host:
     url: github.com/toitlang/pkg-host
     version: ^1.17.0
+  http:
+    url: github.com/toitlang/pkg-http
+    version: ^2.12.0
   json-pointer:
     url: github.com/toitware/toit-json-pointer
     version: ^1.1.0
   openapi-gen:
     path: ..
+  openapi-runtime:
+    path: ../../toit-openapi-runtime

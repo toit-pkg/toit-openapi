@@ -1,0 +1,18 @@
+openapi: 3.1.0
+info:
+  title: GET with path param
+  version: 1.0.0
+paths:
+  /items/{itemId}:
+    get:
+      operationId: getItem
+      tags: [items]
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK

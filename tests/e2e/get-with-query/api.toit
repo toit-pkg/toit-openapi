@@ -33,13 +33,14 @@ class ItemsApi:
     api-client_ = client
     authentication = auth
 
-  search --raw/True --q/string?=null -> http.Response:
+  search --raw/True --q/string --limit/int?=null -> http.Response:
     path := "/search"
     headers := http.Headers
     query-params := []
     cookie-params := []
-    if (q != null):
-      query-params.add-all (openapi-runtime.encode-query-param "q" q)
+    query-params.add-all (openapi-runtime.encode-query-param "q" q)
+    if (limit != null):
+      query-params.add-all (openapi-runtime.encode-query-param "limit" limit)
     return api-client_.invoke-api --path=path
         --method="GET"
         --query-params=query-params
@@ -47,9 +48,14 @@ class ItemsApi:
         --form-params={:}
         --content-type=null
 
-  /** - $q:  */
-  search --q/string?=null:
-    search --raw --q=q
+  /**
+  - $q: 
+  - $limit: 
+  */
+  search --q/string --limit/int?=null:
+    search --raw
+        --q=q
+        --limit=limit
     return null
 
 

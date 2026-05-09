@@ -1,0 +1,23 @@
+openapi: 3.1.0
+info:
+  title: GET with cookie params
+  version: 1.0.0
+paths:
+  /ping:
+    get:
+      operationId: ping
+      tags: [items]
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: csrf
+          in: cookie
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
