@@ -491,15 +491,15 @@ class ApiGenerator:
     //     --content-type=null
     //     [--body=body]
     invoke-args := [
-      toit-gen.Named.named "path" (toit-gen.Ref path-var),
-      toit-gen.Named.named "method" (toit-gen.Literal method.to-ascii-upper),
-      toit-gen.Named.named "query-params" (toit-gen.Ref query-var),
-      toit-gen.Named.named "header-params" (toit-gen.Ref headers-var),
-      toit-gen.Named.named "form-params" (toit-gen.Literal {:}),
-      toit-gen.Named.named "content-type" (toit-gen.Literal null),
+      toit-gen.Named.external "path" (toit-gen.Ref path-var),
+      toit-gen.Named.external "method" (toit-gen.Literal method.to-ascii-upper),
+      toit-gen.Named.external "query-params" (toit-gen.Ref query-var),
+      toit-gen.Named.external "header-params" (toit-gen.Ref headers-var),
+      toit-gen.Named.external "form-params" (toit-gen.Literal {:}),
+      toit-gen.Named.external "content-type" (toit-gen.Literal null),
     ]
     if request-body-arg:
-      invoke-args.add (toit-gen.Named.named "body" (toit-gen.Ref request-body-arg))
+      invoke-args.add (toit-gen.Named.external "body" (toit-gen.Ref request-body-arg))
 
     body.ret (toit-gen.Call (toit-gen.Ref api-client-field) "invoke-api" --arguments=invoke-args)
     return body
@@ -516,7 +516,7 @@ class ApiGenerator:
       branch.assign path-var
           (toit-gen.Call (toit-gen.Ref path-var) "replace"
               --arguments=[
-                toit-gen.Named.named "all" (toit-gen.Literal true),
+                toit-gen.Named.external "all" (toit-gen.Literal true),
                 toit-gen.Literal "{$param.name}",
                 toit-gen.StringInterpolation ["", toit-gen.Ref vd, ""],
               ])
@@ -524,9 +524,9 @@ class ApiGenerator:
       // query-params.add-all (openapi-runtime.encode-query-param name value [--style=...] [--explode])
       args := [toit-gen.Literal param.name, toit-gen.Ref vd]
       if param.style:
-        args.add (toit-gen.Named.named "style" (toit-gen.Literal param.style))
+        args.add (toit-gen.Named.external "style" (toit-gen.Literal param.style))
       if param.explode:
-        args.add (toit-gen.Named.named "explode" (toit-gen.Literal true))
+        args.add (toit-gen.Named.external "explode" (toit-gen.Literal true))
       branch.invoke (toit-gen.Ref query-var) "add-all"
           --arguments=[toit-gen.Call (runtime_.refer encode-query-param_) --arguments=args]
     else if param.in == Parameter.HEADER:
