@@ -16,6 +16,8 @@ import .e2e.post-binary-body.api as post-binary-body
 import .e2e.multi-tag.api as multi-tag
 import .e2e.components-schema.api as components-schema
 import .e2e.components-schema.models as components-schema-models
+import .e2e.array-round-trip.api as array-round-trip
+import .e2e.array-round-trip.models as array-round-trip-models
 
 main:
   test-get-with-query
@@ -25,6 +27,7 @@ main:
   test-post-binary-body
   test-multi-tag-and-close
   test-components-schema-round-trip
+  test-array-round-trip
 
 /**
 Builds an `ApiClient` pointed at $server's loopback address.
@@ -133,3 +136,36 @@ test-components-schema-round-trip:
     decoded := json.decode request.body
     expect-equals 1 decoded["id"]
     expect-equals "frog" decoded["name"]
+
+test-array-round-trip:
+  with-server: | server/TestServer |
+    server.on "POST" "/pets/batch": | response |
+      response.status = 200
+      response.body = """[{"id": 7, "name": "echoed-frog"}, {"id": 8, "name": "echoed-toad"}]""".to-byte-array
+      response.headers["Content-Type"] = "application/json"
+
+    api := array-round-trip.Api --api-client=(make-client_ server)
+    sent := [
+      array-round-trip-models.Pet.from-json {"id": 1, "name": "frog"},
+      array-round-trip-models.Pet.from-json {"id": 2, "name": "toad"},
+    ]
+
+    // Regular variant: each Pet in the request body got serialized via
+    //   to-json, the wire payload is a JSON array, and the response is
+    //   decoded back into a List of Pet instances.
+    received/List := api.pets-api.create-pets sent
+    expect-equals 2 received.size
+    expect-equals 7 received[0].id
+    expect-equals "echoed-frog" received[0].name
+    expect-equals 8 received[1].id
+    expect-equals "echoed-toad" received[1].name
+
+    request := server.only-request
+    expect-equals "POST" request.method
+    expect-equals "/pets/batch" request.resource
+    decoded/List := json.decode request.body
+    expect-equals 2 decoded.size
+    expect-equals 1 decoded[0]["id"]
+    expect-equals "frog" decoded[0]["name"]
+    expect-equals 2 decoded[1]["id"]
+    expect-equals "toad" decoded[1]["name"]
