@@ -83,6 +83,19 @@ class WireShape_:
     return element.needs-codec
 
   /**
+  True iff $encode/$decode emit a `expr.map: | ... |` block.
+
+  Callers use this to decide whether to pull the result into its own
+    statement: toit-gen's formatter can't squeeze a block inside a
+    parenthesized argument like `json.encode (...)` without breaking
+    indentation. $MODEL stays inline because `expr.to-json` is a plain
+    call.
+  */
+  produces-block -> bool:
+    if kind == PASSTHROUGH or kind == MODEL: return false
+    return needs-codec
+
+  /**
   Builds an expression that converts $expr (a typed value) into its
     JSON-encodable form. Returns $expr unchanged when $needs-codec is
     false.
@@ -600,15 +613,20 @@ class ApiGenerator:
 
     request-body-type/toit-gen.Ref? := null
     request-body-description/string? := null
-    body-needs-json-encode := false  // True when body is a generated model.
+    // Non-null iff the body goes out as `application/json` — drives the
+    //   `json.encode (shape.encode body)` recursion in $build-operation-body_.
+    //   For any other media type, the body parameter is a `ByteArray` that
+    //   the runtime passes through verbatim.
+    request-body-shape/WireShape_? := null
     if operation.request-body:
       resolved := operation.request-body.resolved-request-body
       request-body-description = resolved.description
       content := resolved.content
       if content.contains "application/json":
-        request-body-type = type-resolver.resolve content["application/json"].schema
+        json-schema := content["application/json"].schema
+        request-body-type = type-resolver.resolve json-schema
             --hint="$path-$(method)-request-body"
-        body-needs-json-encode = is-model-class_ request-body-type
+        request-body-shape = type-resolver.shape-of json-schema
       else:
         request-body-type = toit-gen.Ref type-resolver.byte-array-class
 
@@ -637,7 +655,7 @@ class ApiGenerator:
             --method=method
             --params=raw-params
             --request-body-arg=raw-body-arg
-            --body-needs-json-encode=body-needs-json-encode
+            --request-body-shape=request-body-shape
             --has-cookie=has-cookie
             --api-client-field=api-client-field)
     if operation.deprecated: raw-fn.toitdoc = ["Deprecated."]
@@ -766,7 +784,7 @@ class ApiGenerator:
       --method/string
       --params/List
       --request-body-arg/toit-gen.VarDefinition?
-      --body-needs-json-encode/bool=false
+      --request-body-shape/WireShape_?=null
       --has-cookie/bool
       --api-client-field/toit-gen.VarDefinition -> toit-gen.Sequence:
     body := toit-gen.Sequence
@@ -832,11 +850,19 @@ class ApiGenerator:
     ]
     if request-body-arg:
       body-expr/toit-gen.Expression := toit-gen.Ref request-body-arg
-      if body-needs-json-encode:
-        // json.encode body.to-json
+      if request-body-shape:
+        // application/json: always JSON-encode. shape.encode walks the
+        //   wire shape (e.g. for a list of Pet → body.map: it.to-json).
         json-imp := ensure-json-import_
+        encoded-form := request-body-shape.encode body-expr
+        if request-body-shape.produces-block:
+          // toit-gen's formatter can't squeeze a `.map: | it | …` block
+          //   inside a parenthesized argument, so we hoist into a local.
+          //   See TODO in toit-gen for the formatter fix.
+          payload-vd := body.define "payload" encoded-form
+          encoded-form = toit-gen.Ref payload-vd
         body-expr = toit-gen.Call (json-imp.refer json-encode_)
-            --arguments=[toit-gen.Call (toit-gen.Ref request-body-arg) "to-json"]
+            --arguments=[encoded-form]
       invoke-args.add (toit-gen.Named.external "body" body-expr)
 
     body.ret (toit-gen.Call (toit-gen.Ref api-client-field) "invoke-api" --arguments=invoke-args)
