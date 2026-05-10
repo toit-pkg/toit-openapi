@@ -5,6 +5,7 @@
 import expect show *
 import host.directory
 import host.file
+import host.pipe
 import openapi-gen.openapi-gen as gen
 
 main:
@@ -15,8 +16,16 @@ main:
       --expected-classes=["Api", "PetApi", "StoreApi", "UserApi"]
       --expected-models=["Pet", "User", "Order"]
 
+/**
+Generates a client from $spec-path, asserts the expected classes and
+  models are present, and runs `toit analyze` against the result so a
+  regression that breaks compilation can't slip past presence checks.
+
+The temp dir lives under `tests/` so the analyzer can resolve
+  `openapi-runtime` and the rest via `tests/package.yaml`.
+*/
 test-generates spec-path/string --expected-classes/List --expected-models/List:
-  tmp-dir := directory.mkdtemp "/tmp/openapi-gen-test-"
+  tmp-dir := directory.mkdtemp "tests/.openapi-gen-test-"
   try:
     gen.main [spec-path, tmp-dir]
     api-path := "$tmp-dir/src/api.toit"
@@ -35,5 +44,9 @@ test-generates spec-path/string --expected-classes/List --expected-models/List:
     expected-models.do: | cls/string |
       expect (models-contents.contains "class $cls")
           --message="generated models.toit is missing class $cls"
+
+    exit-code := pipe.run-program ["toit", "analyze", "--project-root=tests", api-path]
+    expect (exit-code == 0)
+        --message="generated client for $spec-path does not analyze cleanly"
   finally:
     directory.rmdir --recursive tmp-dir
