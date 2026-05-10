@@ -1,0 +1,28 @@
+openapi: 3.1.0
+info:
+  title: Array response of model
+  version: 1.0.0
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      tags: [pets]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pet'
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+      required: [id, name]

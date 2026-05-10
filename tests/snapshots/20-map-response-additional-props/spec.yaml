@@ -1,0 +1,41 @@
+openapi: 3.1.0
+info:
+  title: Map response with additionalProperties
+  version: 1.0.0
+paths:
+  /inventory:
+    get:
+      operationId: getInventory
+      tags: [store]
+      responses:
+        '200':
+          description: status counts
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: integer
+  /pet-index:
+    get:
+      operationId: getPetIndex
+      tags: [store]
+      responses:
+        '200':
+          description: name → Pet map
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/Pet'
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+      required: [id, name]

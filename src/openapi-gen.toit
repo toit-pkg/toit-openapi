@@ -136,6 +136,18 @@ class WireShape_:
     throw "walk-collection_ called on non-collection kind=$kind"
 
 /**
+Type-and-shape of a decodable JSON response. Populated by
+  $ApiGenerator.response-info_ and consumed by $ApiGenerator.build-operation_
+  to emit the regular-variant decode + return.
+*/
+class ResponseInfo_:
+  /// Formal Toit type of the regular variant's return — the model class
+  /// for `MODEL`, `List` for `LIST`, `Map` for `TYPED-MAP`.
+  type/toit-gen.Ref
+  shape/WireShape_
+  constructor --.type --.shape:
+
+/**
 Resolves OpenAPI/JSON-Schema types to $toit-gen.Class instances usable as
   $toit-gen.RefTarget in generated type annotations.
 
@@ -630,7 +642,7 @@ class ApiGenerator:
       else:
         request-body-type = toit-gen.Ref type-resolver.byte-array-class
 
-    response-model := response-model_ operation --hint="$path-$(method)-response"
+    response-info := response-info_ operation --hint="$path-$(method)-response"
 
     // VarDefinitions for the formal parameters: built once per variant since
     // an AST node can't appear under two Function nodes.
@@ -677,19 +689,27 @@ class ApiGenerator:
 
     regular-body := toit-gen.Sequence
     regular-return-type/toit-gen.Ref? := null
-    if response-model:
+    if response-info:
       // response := op --raw ...
-      // return Model.from-json (json.decode response.body.read-all)
+      // [decoded := json.decode response.body.read-all]
+      // return <shape.decode>(decoded)
       raw-call := toit-gen.Call (toit-gen.Ref raw-fn) --arguments=raw-call-args
       response-vd := regular-body.define "response" raw-call
       json-imp := ensure-json-import_
       body-bytes := toit-gen.Call
           (toit-gen.Call (toit-gen.Ref response-vd) "body")
           "read-all"
-      decoded := toit-gen.Call (json-imp.refer json-decode_) --arguments=[body-bytes]
-      regular-body.ret
-          (toit-gen.Call response-model "from-json" --arguments=[decoded])
-      regular-return-type = response-model
+      decoded-expr/toit-gen.Expression := toit-gen.Call
+          (json-imp.refer json-decode_)
+          --arguments=[body-bytes]
+      // Same toit-gen formatter workaround as the request-body path: when
+      //   shape.decode emits a `.map: | ... |` block, hoist the decoded
+      //   value to its own statement so the block sits at statement level.
+      if response-info.shape.produces-block:
+        decoded-vd := regular-body.define "decoded" decoded-expr
+        decoded-expr = toit-gen.Ref decoded-vd
+      regular-body.ret (response-info.shape.decode decoded-expr)
+      regular-return-type = response-info.type
     else:
       regular-body.call (toit-gen.Ref raw-fn) --arguments=raw-call-args
       regular-body.ret (toit-gen.Literal null)
@@ -736,27 +756,18 @@ class ApiGenerator:
     throw "raw parameter not found"
 
   /**
-  Whether $ref points at a class in the generated `models.toit` library.
+  Returns the type-and-shape of the operation's first decodable JSON
+    response, or null when none is decodable.
 
-  Used to decide whether to JSON-encode bodies and JSON-decode responses.
-    Stub `Class.imported` types created when no models library is wired
-    up are not ImportedRef and so always return false.
+  Picks the first 2xx response with an `application/json` content entry;
+    falls back to `default`. PASSTHROUGH-shaped schemas (primitives, inline
+    `type: object` with no structure we can leverage) are skipped — the
+    regular variant returns `null` for those, matching today's behavior.
+    LIST and TYPED-MAP responses are kept even when the element shape is
+    PASSTHROUGH: the regular variant still returns the decoded `List` /
+    `Map` instead of `null`.
   */
-  is-model-class_ ref/toit-gen.Ref -> bool:
-    if not type-resolver.models-import: return false
-    return ref is toit-gen.ImportedRef
-        and (ref as toit-gen.ImportedRef).imp == type-resolver.models-import
-
-  /**
-  Returns the Ref to the response model class for $operation, or null if
-    there is no `application/json` response with a model schema.
-
-  Picks the first 2xx response that has an `application/json` content
-    entry; falls back to `default`. The schema must resolve to a class
-    generated through the models library — primitive responses and
-    inline `type: object` (which resolves to `Map`) are skipped.
-  */
-  response-model_ operation/Operation --hint/string -> toit-gen.Ref?:
+  response-info_ operation/Operation --hint/string -> ResponseInfo_?:
     responses := operation.responses
     if not responses: return null
     candidates := []
@@ -770,8 +781,10 @@ class ApiGenerator:
       if not content.contains "application/json": continue.do
       schema := content["application/json"].schema
       if not schema: continue.do
-      ref := type-resolver.resolve schema --hint=hint
-      if is-model-class_ ref: return ref
+      shape := type-resolver.shape-of schema
+      if shape.kind == WireShape_.PASSTHROUGH: continue.do
+      type := type-resolver.resolve schema --hint=hint
+      return ResponseInfo_ --type=type --shape=shape
     return null
 
   /**
