@@ -29,6 +29,100 @@ RUNTIME-PACKAGE_/toit-gen.Package ::= toit-gen.Package
 ENCODING-PACKAGE_/toit-gen.Package ::= toit-gen.Package.sdk --prefix="encoding"
 
 /**
+Wire shape of a value sent over `application/json`.
+
+Drives JSON-encode of request bodies and JSON-decode of responses.
+  Independent of the formal Toit type ($TypeResolver.resolve), because Toit
+  has no generics so a `List` of `Pet` and a `List` of `string` share the
+  same formal type but need different wire handling.
+
+Recursive: $LIST and $TYPED-MAP shapes hold an inner $WireShape_ in
+  $element, so `type: array, items: { $ref: Pet }` becomes
+  `LIST { element = MODEL Pet }`, and `type: object, additionalProperties:
+  { type: array, items: { $ref: Pet } }` nests further.
+*/
+class WireShape_:
+  /// Primitive, byte array, untyped Map/List, or anything we don't model
+  /// (e.g. `oneOf`). $encode and $decode return the input unchanged.
+  static PASSTHROUGH ::= 0
+
+  /// `$ref` to a generated `models.toit` class. Encode via `expr.to-json`,
+  /// decode via `Class.from-json expr`.
+  static MODEL ::= 1
+
+  /// `type: array` with a known element shape. Encode/decode walk via
+  /// `expr.map: | it | …`.
+  static LIST ::= 2
+
+  /// `type: object` with `additionalProperties` and no named `properties`
+  /// — i.e. a uniformly-typed map. Walks via `expr.map: | _ v | …`.
+  static TYPED-MAP ::= 3
+
+  kind/int
+
+  /// For $MODEL: the (Imported)Ref to the model class. Used both as the
+  /// callee for `Class.from-json` and as the formal return type of the
+  /// regular variant.
+  model-ref/toit-gen.Ref? := null
+
+  /// For $LIST and $TYPED-MAP: the shape of one element.
+  element/WireShape_? := null
+
+  constructor --.kind --.model-ref=null --.element=null:
+
+  /**
+  True iff $encode and $decode build a non-trivial expression.
+
+  $PASSTHROUGH always returns false; $LIST and $TYPED-MAP return true
+    only when their element does. Used to short-circuit `expr.map` chains
+    when the recursion would just reproduce the input.
+  */
+  needs-codec -> bool:
+    if kind == PASSTHROUGH: return false
+    if kind == MODEL: return true
+    return element.needs-codec
+
+  /**
+  Builds an expression that converts $expr (a typed value) into its
+    JSON-encodable form. Returns $expr unchanged when $needs-codec is
+    false.
+  */
+  encode expr/toit-gen.Expression -> toit-gen.Expression:
+    if not needs-codec: return expr
+    if kind == MODEL: return toit-gen.Call expr "to-json"
+    return walk-collection_ expr: | inner | element.encode inner
+
+  /**
+  Mirror of $encode. Builds an expression that converts a JSON-decoded
+    value into its typed form.
+  */
+  decode expr/toit-gen.Expression -> toit-gen.Expression:
+    if not needs-codec: return expr
+    if kind == MODEL:
+      return toit-gen.Call model-ref "from-json" --arguments=[expr]
+    return walk-collection_ expr: | inner | element.decode inner
+
+  /**
+  Emits `expr.map: | it | <step>` for $LIST or `expr.map: | _ v | <step>`
+    for $TYPED-MAP. $step receives the per-element/value reference and
+    returns the converted expression.
+  */
+  walk-collection_ expr/toit-gen.Expression [step] -> toit-gen.Expression:
+    if kind == LIST:
+      it-def := toit-gen.VarDefinition.it
+      inner := step.call (toit-gen.Ref it-def)
+      block := toit-gen.Block --parameters=[it-def]
+          toit-gen.Statement inner
+      return toit-gen.Call expr "map" --arguments=[block]
+    if kind == TYPED-MAP:
+      value-def := toit-gen.VarDefinition.parameter "v"
+      inner := step.call (toit-gen.Ref value-def)
+      block := toit-gen.Block --parameters=[toit-gen.VarDefinition.ignored, value-def]
+          toit-gen.Statement inner
+      return toit-gen.Call expr "map" --arguments=[block]
+    throw "walk-collection_ called on non-collection kind=$kind"
+
+/**
 Resolves OpenAPI/JSON-Schema types to $toit-gen.Class instances usable as
   $toit-gen.RefTarget in generated type annotations.
 
@@ -119,6 +213,89 @@ class TypeResolver:
         if type == "object": return map-class
         return null
     return null
+
+  /**
+  Returns the wire shape for $open-api-schema.
+
+  Independent of $resolve: a list of `Pet` returns a $WireShape_ whose
+    kind is $WireShape_.LIST with `element.kind == MODEL`, while $resolve
+    on the same schema returns a plain `List` (Toit lacks generics).
+    Callers use the shape to decide how to JSON-encode/decode and the
+    formal type to declare the parameter.
+
+  Schemas we don't recognize (no `type` action, polymorphic constructs,
+    `type: object` with named properties but no generated class, etc.)
+    fall through to $WireShape_.PASSTHROUGH — `json.encode` / `json.decode`
+    handles those without per-element work.
+  */
+  shape-of open-api-schema/Schema? -> WireShape_:
+    if not open-api-schema:
+      return WireShape_ --kind=WireShape_.PASSTHROUGH
+    return shape-of-js_ open-api-schema.schema.schema
+
+  shape-of-js_ js/json-schema.Schema -> WireShape_:
+    model-ref := model-ref-for_ js
+    if model-ref:
+      return WireShape_ --kind=WireShape_.MODEL --model-ref=model-ref
+
+    type-action := type-action-of_ js
+    if type-action and type-action.types.size == 1:
+      type/string := type-action.types.first
+      if type == "array":
+        items-schema := items-schema-of_ js
+        element/WireShape_ := items-schema
+            ? shape-of-js_ items-schema
+            : (WireShape_ --kind=WireShape_.PASSTHROUGH)
+        return WireShape_ --kind=WireShape_.LIST --element=element
+      if type == "object":
+        // Named properties → not a uniformly-typed map. We'd want MODEL
+        // but no class is generated for inline OpenAPI object schemas
+        // today, so fall through to PASSTHROUGH.
+        if has-named-properties_ js:
+          return WireShape_ --kind=WireShape_.PASSTHROUGH
+        additional := additional-properties-schema-of_ js
+        if additional:
+          return WireShape_ --kind=WireShape_.TYPED-MAP
+              --element=(shape-of-js_ additional)
+
+    return WireShape_ --kind=WireShape_.PASSTHROUGH
+
+  /**
+  Returns the (Imported)Ref to use for a `$ref`-only $js that points at a
+    schema registered through $models. Returns null when $js is not a pure
+    `$ref` or when the target has no generated class (primitives behind
+    `$ref`, schemas in unknown locations).
+  */
+  model-ref-for_ js/json-schema.Schema -> toit-gen.Ref?:
+    if not models or not js.is-reference-only: return null
+    target-uri := js.reference-target-uri
+    generated := models.lookup-by-uri target-uri
+    if not generated: return null
+    return models-import
+        ? (models-import.refer generated)
+        : (toit-gen.Ref generated)
+
+  static type-action-of_ js/json-schema.Schema -> schema-action.Type?:
+    js.actions.do: | action/schema-action.Action |
+      if action is schema-action.Type: return action as schema-action.Type
+    return null
+
+  static items-schema-of_ js/json-schema.Schema -> json-schema.Schema?:
+    js.actions.do: | action/schema-action.Action |
+      if action is schema-action.Items: return (action as schema-action.Items).items
+    return null
+
+  static additional-properties-schema-of_ js/json-schema.Schema -> json-schema.Schema?:
+    js.actions.do: | action/schema-action.Action |
+      if action is schema-action.Properties: return (action as schema-action.Properties).additional
+    return null
+
+  static has-named-properties_ js/json-schema.Schema -> bool:
+    js.actions.do: | action/schema-action.Action |
+      if action is schema-action.Properties:
+        props := (action as schema-action.Properties).properties
+        if props and not props.is-empty: return true
+    return false
 
 /**
 Builds a $toit-gen.Program for a given $OpenApi document.
