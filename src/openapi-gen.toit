@@ -232,6 +232,7 @@ class ApiGenerator:
         --is-private=true
 
     add-api-constructors_ api-class api-client-field
+        --base-path=base-path-of_ openapi
     add-close-method_ api-class api-client-field
 
     // Build per-tag classes plus their getters/fields on Api.
@@ -269,11 +270,27 @@ class ApiGenerator:
     return program
 
   /**
+  The base path to bake into the generated `Api network/net.Client`
+    constructor.
+
+  Picks the first `servers[].url` declared on $openapi, defaulting to `""`.
+    Multi-server fan-out and `{variable}` substitution are deliberately not
+    handled — both can be a later phase, and neither blocks real-world specs
+    in practice. URL is passed through verbatim, so absolute URLs and
+    relative roots both work.
+  */
+  static base-path-of_ openapi/OpenApi -> string:
+    servers := openapi.servers
+    if not servers or servers.is-empty: return ""
+    return (servers.first as Server).url
+
+  /**
   Adds the two `Api` constructors:
     - `constructor --api-client/openapi-runtime.ApiClient`
     - `constructor network/net.Client`
   */
-  add-api-constructors_ api-class/toit-gen.Class field/toit-gen.VarDefinition -> none:
+  add-api-constructors_ api-class/toit-gen.Class field/toit-gen.VarDefinition
+      --base-path/string -> none:
     // constructor --api-client/openapi-runtime.ApiClient:
     //   api-client_ = api-client
     api-client-param := toit-gen.VarDefinition.parameter "api-client"
@@ -285,7 +302,7 @@ class ApiGenerator:
     api-class.add-constructor --parameters=[api-client-param] body1
 
     // constructor network/net.Client:
-    //   api-client_ = openapi-runtime.ApiClient network --base-path=""
+    //   api-client_ = openapi-runtime.ApiClient network --base-path="<servers[0].url>"
     network-param := toit-gen.VarDefinition.parameter "network"
         --type=(net_.refer net-client_)
     network-param.name = "network"
@@ -294,7 +311,7 @@ class ApiGenerator:
         toit-gen.Call (runtime_.refer api-client_)
             --arguments=[
               toit-gen.Ref network-param,
-              toit-gen.Named.external "base-path" (toit-gen.Literal ""),
+              toit-gen.Named.external "base-path" (toit-gen.Literal base-path),
             ]
     api-class.add-constructor --parameters=[network-param] body2
 
