@@ -26,13 +26,6 @@ elsewhere. Track them here so they don't get forgotten.
 
 ### `toit-json-schema`
 
-- **null-handling on optional `$ref` and array fields.** `Pet.from-json`
-  in `models.toit` calls `Category.from-json data["category"]` even when
-  the key is missing/null, and `Pet.to-json` calls `category.to-json` on
-  null. Both crash on real responses where optional `$ref` fields are
-  omitted. Generate a null check before the recursive call (and skip
-  null entries when serializing). Without this, every "real spec"
-  e2e test against an upstream API will eventually trip.
 - **unused `import core`** in generated `models.toit`. Cosmetic but it
   shows up in every generated file.
 - **(refactor)** Phase 5b open-coded a smaller version of the

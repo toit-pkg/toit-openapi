@@ -18,6 +18,8 @@ import .e2e.components-schema.api as components-schema
 import .e2e.components-schema.models as components-schema-models
 import .e2e.array-round-trip.api as array-round-trip
 import .e2e.array-round-trip.models as array-round-trip-models
+import .e2e.nullable-ref-and-array.api as nullable-ref
+import .e2e.nullable-ref-and-array.models as nullable-ref-models
 
 main:
   test-get-with-query
@@ -28,6 +30,7 @@ main:
   test-multi-tag-and-close
   test-components-schema-round-trip
   test-array-round-trip
+  test-nullable-ref-and-array-round-trip
 
 /**
 Builds an `ApiClient` pointed at $server's loopback address.
@@ -169,3 +172,50 @@ test-array-round-trip:
     expect-equals "frog" decoded[0]["name"]
     expect-equals 2 decoded[1]["id"]
     expect-equals "toad" decoded[1]["name"]
+
+test-nullable-ref-and-array-round-trip:
+  with-server: | server/TestServer |
+    api := nullable-ref.Api --api-client=(make-client_ server)
+
+    // First reply omits both optional fields entirely; both from-json (on
+    //   the response) and to-json (on the request body) must tolerate the
+    //   missing/null fields without crashing.
+    server.on "POST" "/pets": | response |
+      response.status = 201
+      response.body = """{"id": 1, "name": "missing"}""".to-byte-array
+      response.headers["Content-Type"] = "application/json"
+
+    sent1 := nullable-ref-models.Pet.from-json {"id": 10, "name": "noopt"}
+    received1 := api.pets-api.create-pet sent1
+    expect-equals 1 received1.id
+    expect-null received1.category
+    expect-null received1.tags
+
+    request1 := server.recorded[0]
+    decoded1 := json.decode request1.body
+    expect-null decoded1["category"]
+    expect-null decoded1["tags"]
+
+    // Second reply sends an explicit null for the ref and a populated array;
+    //   both forms must round-trip.
+    server.recorded.clear
+    server.on "POST" "/pets": | response |
+      response.status = 201
+      response.body = """{"id": 2, "name": "explicit-null", "category": null, "tags": [{"name": "t1"}, {"name": "t2"}]}""".to-byte-array
+      response.headers["Content-Type"] = "application/json"
+
+    cat := nullable-ref-models.Category.from-json {"id": 9, "name": "dogs"}
+    tag := nullable-ref-models.Tag.from-json {"name": "good"}
+    sent2 := nullable-ref-models.Pet.from-json {"id": 11, "name": "full"}
+    sent2.category = cat
+    sent2.tags = [tag]
+    received2 := api.pets-api.create-pet sent2
+    expect-equals 2 received2.id
+    expect-null received2.category
+    expect-equals 2 received2.tags.size
+
+    request2 := server.recorded[0]
+    decoded2 := json.decode request2.body
+    expect-equals 9 decoded2["category"]["id"]
+    expect-equals "dogs" decoded2["category"]["name"]
+    expect-equals "good" decoded2["tags"][0]["name"]
