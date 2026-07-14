@@ -490,7 +490,7 @@ class ApiGenerator:
   /**
   Adds the two `Api` constructors:
     - `constructor --api-client/openapi-runtime.ApiClient`
-    - `constructor network/net.Client`
+    - `constructor network/net.Client --authentication/openapi-runtime.Authentication?=null`
   */
   add-api-constructors_ api-class/toit-gen.Class field/toit-gen.VarDefinition
       --base-path/string -> none:
@@ -504,19 +504,28 @@ class ApiGenerator:
     body1.assign field (toit-gen.Ref api-client-param)
     api-class.add-constructor --parameters=[api-client-param] body1
 
-    // constructor network/net.Client:
-    //   api-client_ = openapi-runtime.ApiClient network --base-path="<servers[0].url>"
+    // constructor network/net.Client
+    //     --authentication/openapi-runtime.Authentication?=null:
+    //   api-client_ = openapi-runtime.ApiClient network
+    //       --base-path="<servers[0].url>"
+    //       --authentication=authentication
     network-param := toit-gen.VarDefinition.parameter "network"
         --type=(net_.refer net-client_)
     network-param.name = "network"
+    auth-param := toit-gen.VarDefinition.parameter "authentication"
+        --type=(runtime_.refer authentication_)
+        --is-named=true
+        --is-nullable=true
+        --initial=(toit-gen.Literal null)
     body2 := toit-gen.Sequence
     body2.assign field
         toit-gen.Call (runtime_.refer api-client_)
             --arguments=[
               toit-gen.Ref network-param,
               toit-gen.Named.external "base-path" (toit-gen.Literal base-path),
+              toit-gen.Named.external "authentication" (toit-gen.Ref auth-param),
             ]
-    api-class.add-constructor --parameters=[network-param] body2
+    api-class.add-constructor --parameters=[network-param, auth-param] body2
 
   /**
   Adds the `close` method:
@@ -609,6 +618,7 @@ class ApiGenerator:
           --method=entry[1]
           --operation=entry[2]
           --api-client-field=api-client-field
+          --auth-field=auth-field
 
   /**
   Builds the two methods (raw + regular variant) for one $operation.
@@ -617,7 +627,8 @@ class ApiGenerator:
       --path/string
       --method/string
       --operation/Operation
-      --api-client-field/toit-gen.VarDefinition -> none:
+      --api-client-field/toit-gen.VarDefinition
+      --auth-field/toit-gen.VarDefinition -> none:
     op-name := operation.operation-id
         ? namer.toit-member-name operation.operation-id
         : namer.toit-member-name "$path-$method"
@@ -670,7 +681,8 @@ class ApiGenerator:
             --request-body-arg=raw-body-arg
             --request-body-shape=request-body-shape
             --has-cookie=has-cookie
-            --api-client-field=api-client-field)
+            --api-client-field=api-client-field
+            --auth-field=auth-field)
     if operation.deprecated: raw-fn.toitdoc = ["Deprecated."]
 
     // --- Regular variant ---
@@ -800,7 +812,8 @@ class ApiGenerator:
       --request-body-arg/toit-gen.VarDefinition?
       --request-body-shape/WireShape_?=null
       --has-cookie/bool
-      --api-client-field/toit-gen.VarDefinition -> toit-gen.Sequence:
+      --api-client-field/toit-gen.VarDefinition
+      --auth-field/toit-gen.VarDefinition -> toit-gen.Sequence:
     body := toit-gen.Sequence
     // path := "<path>"
     // headers := http.Headers
@@ -861,6 +874,7 @@ class ApiGenerator:
       toit-gen.Named.external "header-params" (toit-gen.Ref headers-var),
       toit-gen.Named.external "form-params" (toit-gen.Literal {:}),
       toit-gen.Named.external "content-type" (toit-gen.Literal null),
+      toit-gen.Named.external "authentication" (toit-gen.Ref auth-field),
     ]
     if request-body-arg:
       body-expr/toit-gen.Expression := toit-gen.Ref request-body-arg

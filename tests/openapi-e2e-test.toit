@@ -23,6 +23,7 @@ import .e2e.nullable-ref-and-array.models as nullable-ref-models
 
 main:
   test-get-with-query
+  test-authentication
   test-path-param
   test-header-param
   test-cookie-param
@@ -73,6 +74,38 @@ test-get-with-query:
     result := api.items-api.search --q="frog"
     expect-null result
     expect-equals 1 server.recorded.size
+
+test-authentication:
+  with-server: | server/TestServer |
+    // Tag-level authentication is applied to every request of that tag.
+    api := get-with-query.Api --api-client=(make-client_ server)
+    key-auth := openapi-runtime.ApiKeyAuth --location="header" --param-name="X-Api-Key" --api-key="s3cret"
+    api.items-api.authentication = key-auth
+    api.items-api.search --raw --q="frog"
+    request := server.only-request
+    expect-equals "s3cret" (request.headers.single "X-Api-Key")
+
+    // Client-level authentication is the default when no tag-level
+    //   authentication is set.
+    server.recorded.clear
+    basic-auth := openapi-runtime.HttpBasicAuth --username="u" --password="p"
+    client := openapi-runtime.ApiClient server.network
+        --base-path=server.base-path
+        --authentication=basic-auth
+    api = get-with-query.Api --api-client=client
+    api.items-api.search --raw --q="frog"
+    request = server.only-request
+    expect ((request.headers.single "Authorization").starts-with "Basic ")
+    expect-null (request.headers.single "X-Api-Key")
+
+    // Tag-level authentication wins over the client-level default.
+    server.recorded.clear
+    override-auth := openapi-runtime.ApiKeyAuth --location="header" --param-name="X-Api-Key" --api-key="override"
+    api.items-api.authentication = override-auth
+    api.items-api.search --raw --q="frog"
+    request = server.only-request
+    expect-equals "override" (request.headers.single "X-Api-Key")
+    expect-null (request.headers.single "Authorization")
 
 test-path-param:
   with-server: | server/TestServer |

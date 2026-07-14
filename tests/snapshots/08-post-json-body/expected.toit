@@ -11,8 +11,10 @@ class Api:
     api-client_ = api-client
 
 
-  constructor network/net.Client:
-    api-client_ = openapi-runtime.ApiClient network --base-path=""
+  constructor network/net.Client --authentication/openapi-runtime.Authentication?=null:
+    api-client_ = openapi-runtime.ApiClient network
+        --base-path=""
+        --authentication=authentication
 
   close:
     if (not api-client_):
@@ -46,6 +48,7 @@ class ItemsApi:
         --header-params=headers
         --form-params={:}
         --content-type=null
+        --authentication=authentication
         --body=json.encode body
 
   create-item body-1/Map:

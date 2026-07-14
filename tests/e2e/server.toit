@@ -70,7 +70,7 @@ class TestServer:
     network = net.open
     socket_ = network.tcp-listen 0
     port_ = socket_.local-address.port
-    server_ = http.Server --max-tasks=1
+    server_ = http.Server --max-tasks=4
     ready := monitor.Latch
     task_ = task::
       ready.set true

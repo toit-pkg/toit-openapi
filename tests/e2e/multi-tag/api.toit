@@ -11,8 +11,10 @@ class Api:
     api-client_ = api-client
 
 
-  constructor network/net.Client:
-    api-client_ = openapi-runtime.ApiClient network --base-path=""
+  constructor network/net.Client --authentication/openapi-runtime.Authentication?=null:
+    api-client_ = openapi-runtime.ApiClient network
+        --base-path=""
+        --authentication=authentication
 
   close:
     if (not api-client_):
@@ -50,6 +52,7 @@ class PetsApi:
         --header-params=headers
         --form-params={:}
         --content-type=null
+        --authentication=authentication
 
   list-pets:
     list-pets --raw
@@ -75,6 +78,7 @@ class UsersApi:
         --header-params=headers
         --form-params={:}
         --content-type=null
+        --authentication=authentication
 
   list-users:
     list-users --raw

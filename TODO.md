@@ -56,10 +56,18 @@ elsewhere. Track them here so they don't get forgotten.
 
 ## Out of scope, in rough priority order
 
-1. Security / `securitySchemes` wiring (next). Skeleton exists on tag
-   classes but `authentication` is never threaded into `invoke-api`.
-   Start with `apiKey` (header/query/cookie) and `http: bearer`; defer
-   `oauth2` until needed (use `toit-auth` when we do).
+1. Security / `securitySchemes` wiring, Phase B (scheme-aware). Phase A
+   is done: the tag-class `authentication` field and the convenience
+   constructor's `--authentication` thread into `invoke-api`, with
+   tag-level winning over client-level. Phase B: key authentications by
+   scheme name on `ApiClient`, emit each operation's effective security
+   requirement (OR-of-ANDs; per-op override; `{}` = optional — needs the
+   parser TODO at `src/openapi.toit:154`), and generate per-scheme
+   convenience (e.g. `--api-key=`) from `securitySchemes` metadata.
+   Decide whether the tag-level field survives Phase B or the scheme map
+   replaces it. Defer `oauth2` flows to `toit-oauth`; note that
+   `HttpBearerAuthCallback_` caches the first token forever, which would
+   defeat toit-oauth's token refresh — make it delegate instead.
 2. Other request-body media types: `multipart/form-data` and
    `application/x-www-form-urlencoded`. Runtime already accepts
    `--form-params`; the generator just needs to route to it.
