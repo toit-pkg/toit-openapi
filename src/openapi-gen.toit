@@ -349,6 +349,7 @@ class ApiGenerator:
   // Free-standing imported names treated as $RefTarget via $VarDefinition.
   encode-query-param_/toit-gen.VarDefinition ::= imported-name_ "encode-query-param"
   encode-header-param_/toit-gen.VarDefinition ::= imported-name_ "encode-header-param"
+  encode-path-param_/toit-gen.VarDefinition ::= imported-name_ "encode-path-param"
   json-encode_/toit-gen.VarDefinition ::= imported-name_ "encode"
   json-decode_/toit-gen.VarDefinition ::= imported-name_ "decode"
 
@@ -889,13 +890,21 @@ class ApiGenerator:
       --query-var/toit-gen.VarDefinition
       --cookie-var/toit-gen.VarDefinition -> none:
     if param.in == Parameter.PATH:
-      // path = path.replace --all "{name}" "$value"
+      // path = path.replace --all "{name}"
+      //     (openapi-runtime.encode-path-param "name" value [--style=...] [--explode])
+      // encode-path-param percent-encodes the value, so the substitution
+      //   cannot corrupt the URI.
+      args := [toit-gen.Literal param.name, toit-gen.Ref vd]
+      if param.style:
+        args.add (toit-gen.Named.external "style" (toit-gen.Literal param.style))
+      if param.explode:
+        args.add (toit-gen.Named.external "explode" (toit-gen.Literal true))
       branch.assign path-var
           (toit-gen.Call (toit-gen.Ref path-var) "replace"
               --arguments=[
                 toit-gen.Named.external "all" (toit-gen.Literal true),
                 toit-gen.Literal "{$param.name}",
-                toit-gen.StringInterpolation ["", toit-gen.Ref vd, ""],
+                toit-gen.Call (runtime_.refer encode-path-param_) --arguments=args,
               ])
     else if param.in == Parameter.QUERY:
       // query-params.add-all (openapi-runtime.encode-query-param name value [--style=...] [--explode])

@@ -60,19 +60,14 @@ elsewhere. Track them here so they don't get forgotten.
    classes but `authentication` is never threaded into `invoke-api`.
    Start with `apiKey` (header/query/cookie) and `http: bearer`; defer
    `oauth2` until needed (use `toit-auth` when we do).
-2. Path parameters are interpolated raw (`path.replace --all "{id}"
-   "$id"`) — no percent-encoding, and the runtime's `encode-path-param`
-   (simple/matrix/label styles) is never called. A value containing `/`,
-   space, `?` or `#` corrupts the URI. Route path params through
-   `encode-path-param` and URL-encode the result.
-3. Other request-body media types: `multipart/form-data` and
+2. Other request-body media types: `multipart/form-data` and
    `application/x-www-form-urlencoded`. Runtime already accepts
    `--form-params`; the generator just needs to route to it.
-4. Generated `package.yaml` / `README` / example `main`.
-5. `oneOf` / `allOf` / `anyOf` / `discriminator` model generation
+3. Generated `package.yaml` / `README` / example `main`.
+4. `oneOf` / `allOf` / `anyOf` / `discriminator` model generation
    (depends on the toit-json-schema refactor above).
-6. Multiple response media types and response headers.
-7. `webhooks` / `callbacks` / `links`.
-8. Multi-server fan-out and `{variable}` substitution in `servers[]`.
-9. Parser TODOs (`src/openapi.toit:154`, `:955`, `:1885`): empty
+5. Multiple response media types and response headers.
+6. `webhooks` / `callbacks` / `links`.
+7. Multi-server fan-out and `{variable}` substitution in `servers[]`.
+8. Parser TODOs (`src/openapi.toit:154`, `:955`, `:1885`): empty
    security requirement `{}`, real `RuntimeExpression` parsing.

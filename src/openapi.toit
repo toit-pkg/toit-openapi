@@ -1267,7 +1267,7 @@ class Parameter extends Extensionable_ implements ParameterOrReference:
     - empty: `;color`
     - string: `;color=blue`
     - array: `;color=blue;color=black;color=brown`
-    - object: `;R,100;G,200;B,150`
+    - object: `;R=100;G=200;B=150`
   - $style == $STYLE-LABEL, $explode == false
     - empty: `.` (dot character)
     - string: `.blue`

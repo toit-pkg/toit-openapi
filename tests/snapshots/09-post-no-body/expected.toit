@@ -40,7 +40,7 @@ class ItemsApi:
     cookie-params := []
     path = path.replace --all
         "{itemId}"
-        "$item-id"
+        (openapi-runtime.encode-path-param "itemId" item-id)
     return api-client_.invoke-api --path=path
         --method="POST"
         --query-params=query-params

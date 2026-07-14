@@ -82,6 +82,17 @@ test-path-param:
     expect-equals "GET" request.method
     expect-equals "/items/42" request.resource
 
+    // Reserved characters in the value are percent-encoded, so they can
+    //   neither escape the path segment nor start the query string.
+    server.recorded.clear
+    api.items-api.get-item --raw --item-id="a/b c?d"
+    request = server.only-request
+    expect-equals "/items/a%2Fb%20c%3Fd" request.path
+    // The server decodes back to the original value; the '?' did not
+    //   start a query string.
+    expect-equals "/items/a/b c?d" request.resource
+    expect request.query.is-empty
+
 test-header-param:
   with-server: | server/TestServer |
     api := header-param.Api --api-client=(make-client_ server)
