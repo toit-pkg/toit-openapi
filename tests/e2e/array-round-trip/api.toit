@@ -29,6 +29,7 @@ class PetsApi:
   constructor client/openapi-runtime.ApiClient:
     api-client_ = client
 
+  /** Variant of $(create-pets body) that returns the raw HTTP response. */
   create-pets --raw/True body/List -> http.Response:
     path := "/pets/batch"
     headers := http.Headers
@@ -45,8 +46,8 @@ class PetsApi:
         --content-type=null
         --body=json.encode payload
 
-  create-pets body-1/List -> List:
-    response := create-pets --raw body-1
+  create-pets body/List -> List:
+    response := create-pets --raw body
     decoded := json.decode response.body.read-all
     return decoded.map: | it |
       Pet.from-json it

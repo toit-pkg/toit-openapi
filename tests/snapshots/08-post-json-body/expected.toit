@@ -28,6 +28,7 @@ class ItemsApi:
   constructor client/openapi-runtime.ApiClient:
     api-client_ = client
 
+  /** Variant of $(create-item body) that returns the raw HTTP response. */
   create-item --raw/True body/Map -> http.Response:
     path := "/items"
     headers := http.Headers
@@ -42,8 +43,8 @@ class ItemsApi:
         --content-type=null
         --body=json.encode body
 
-  create-item body-1/Map:
-    create-item --raw body-1
+  create-item body/Map:
+    create-item --raw body
     return null
 
 

@@ -33,6 +33,7 @@ class PetsApi:
   constructor client/openapi-runtime.ApiClient:
     api-client_ = client
 
+  /** Variant of $(list-pets) that returns the raw HTTP response. */
   list-pets --raw/True -> http.Response:
     path := "/pets"
     headers := http.Headers
@@ -56,6 +57,7 @@ class UsersApi:
   constructor client/openapi-runtime.ApiClient:
     api-client_ = client
 
+  /** Variant of $(list-users) that returns the raw HTTP response. */
   list-users --raw/True -> http.Response:
     path := "/users"
     headers := http.Headers

@@ -27,6 +27,7 @@ class ItemsApi:
   constructor client/openapi-runtime.ApiClient:
     api-client_ = client
 
+  /** Variant of $(ping --x-trace-id) that returns the raw HTTP response. */
   ping --raw/True --x-trace-id/string -> http.Response:
     path := "/ping"
     headers := http.Headers
@@ -40,7 +41,6 @@ class ItemsApi:
         --form-params={:}
         --content-type=null
 
-  /** - $x-trace-id:  */
   ping --x-trace-id/string:
     ping --raw --x-trace-id=x-trace-id
     return null

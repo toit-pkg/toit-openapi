@@ -29,6 +29,7 @@ class StoreApi:
   constructor client/openapi-runtime.ApiClient:
     api-client_ = client
 
+  /** Variant of $(get-inventory) that returns the raw HTTP response. */
   get-inventory --raw/True -> http.Response:
     path := "/inventory"
     headers := http.Headers
@@ -45,6 +46,7 @@ class StoreApi:
     response := get-inventory --raw
     return json.decode response.body.read-all
 
+  /** Variant of $(get-pet-index) that returns the raw HTTP response. */
   get-pet-index --raw/True -> http.Response:
     path := "/pet-index"
     headers := http.Headers

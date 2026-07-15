@@ -27,6 +27,7 @@ class ItemsApi:
   constructor client/openapi-runtime.ApiClient:
     api-client_ = client
 
+  /** Variant of $(search --q --limit) that returns the raw HTTP response. */
   search --raw/True --q/string --limit/int?=null -> http.Response:
     path := "/search"
     headers := http.Headers
@@ -42,10 +43,6 @@ class ItemsApi:
         --form-params={:}
         --content-type=null
 
-  /**
-  - $q: 
-  - $limit: 
-  */
   search --q/string --limit/int?=null:
     search --raw
         --q=q

@@ -27,6 +27,7 @@ class ItemsApi:
   constructor client/openapi-runtime.ApiClient:
     api-client_ = client
 
+  /** Variant of $(touch-item --item-id) that returns the raw HTTP response. */
   touch-item --raw/True --item-id/string -> http.Response:
     path := "/items/{itemId}/touch"
     headers := http.Headers
@@ -42,7 +43,6 @@ class ItemsApi:
         --form-params={:}
         --content-type=null
 
-  /** - $item-id:  */
   touch-item --item-id/string:
     touch-item --raw --item-id=item-id
     return null

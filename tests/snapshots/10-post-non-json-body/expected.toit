@@ -27,6 +27,7 @@ class ItemsApi:
   constructor client/openapi-runtime.ApiClient:
     api-client_ = client
 
+  /** Variant of $(upload body) that returns the raw HTTP response. */
   upload --raw/True body/ByteArray -> http.Response:
     path := "/upload"
     headers := http.Headers
@@ -41,8 +42,8 @@ class ItemsApi:
         --content-type=null
         --body=body
 
-  upload body-1/ByteArray:
-    upload --raw body-1
+  upload body/ByteArray:
+    upload --raw body
     return null
 
 

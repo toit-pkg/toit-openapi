@@ -27,7 +27,11 @@ class ItemsApi:
   constructor client/openapi-runtime.ApiClient:
     api-client_ = client
 
-  /** Deprecated. */
+  /**
+  Deprecated.
+
+  Variant of $(old-endpoint) that returns the raw HTTP response.
+  */
   old-endpoint --raw/True -> http.Response:
     path := "/old"
     headers := http.Headers

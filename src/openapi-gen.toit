@@ -722,7 +722,8 @@ class ApiGenerator:
             --has-cookie=has-cookie
             --api-client-field=api-client-field
             --security-expr=security-expr)
-    if operation.deprecated: raw-fn.toitdoc = ["Deprecated."]
+    // The raw variant's toitdoc is set once the regular variant exists, so
+    //   it can cross-reference it instead of duplicating the docs.
 
     // --- Regular variant ---
     // op-name [--p1=...] [--p2=...] [body/Body] [-> ResponseModel]:
@@ -774,6 +775,15 @@ class ApiGenerator:
         --params=regular-params
         --request-body-arg=regular-body-arg
         --request-body-description=request-body-description
+
+    raw-toitdoc := []
+    if operation.deprecated: raw-toitdoc.add "Deprecated.\n\n"
+    raw-toitdoc.add "Variant of "
+    // The regular variant shares the raw variant's name, so an exact
+    //   (full-signature) reference is needed for the link to resolve to it.
+    raw-toitdoc.add (toit-gen.ToitdocExactRef regular-fn)
+    raw-toitdoc.add " that returns the raw HTTP response."
+    raw-fn.toitdoc = raw-toitdoc
 
   /**
   A formal $toit-gen.VarDefinition for an OpenAPI $Parameter.
@@ -994,7 +1004,9 @@ class ApiGenerator:
     params.do: | pair/List |
       param/Parameter := pair[0]
       vd/toit-gen.VarDefinition := pair[1]
-      desc := param.description or ""
+      // Undocumented parameters get no toitdoc entry.
+      desc := param.description
+      if not desc or desc == "": continue.do
       if not parts.is-empty: parts.add "\n"
       parts.add "- "
       parts.add (toit-gen.ToitdocNameRef vd)

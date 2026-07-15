@@ -41,6 +41,7 @@ class ItemsApi:
   constructor client/openapi-runtime.ApiClient:
     api-client_ = client
 
+  /** Variant of $(get-secure) that returns the raw HTTP response. */
   get-secure --raw/True -> http.Response:
     path := "/secure"
     headers := http.Headers
@@ -58,6 +59,7 @@ class ItemsApi:
     get-secure --raw
     return null
 
+  /** Variant of $(get-both) that returns the raw HTTP response. */
   get-both --raw/True -> http.Response:
     path := "/both"
     headers := http.Headers
@@ -75,6 +77,7 @@ class ItemsApi:
     get-both --raw
     return null
 
+  /** Variant of $(get-optional) that returns the raw HTTP response. */
   get-optional --raw/True -> http.Response:
     path := "/optional"
     headers := http.Headers
@@ -92,6 +95,7 @@ class ItemsApi:
     get-optional --raw
     return null
 
+  /** Variant of $(get-public) that returns the raw HTTP response. */
   get-public --raw/True -> http.Response:
     path := "/public"
     headers := http.Headers

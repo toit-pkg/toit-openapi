@@ -27,6 +27,7 @@ class ItemsApi:
   constructor client/openapi-runtime.ApiClient:
     api-client_ = client
 
+  /** Variant of $(ping --session --csrf) that returns the raw HTTP response. */
   ping --raw/True --session/string --csrf/string -> http.Response:
     path := "/ping"
     headers := http.Headers
@@ -42,10 +43,6 @@ class ItemsApi:
         --form-params={:}
         --content-type=null
 
-  /**
-  - $session: 
-  - $csrf: 
-  */
   ping --session/string --csrf/string:
     ping --raw
         --session=session

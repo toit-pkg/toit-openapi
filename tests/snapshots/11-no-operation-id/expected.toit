@@ -27,6 +27,7 @@ class ItemsApi:
   constructor client/openapi-runtime.ApiClient:
     api-client_ = client
 
+  /** Variant of $(/widgets/{id}-get --id) that returns the raw HTTP response. */
   /widgets/{id}-get --raw/True --id/string -> http.Response:
     path := "/widgets/{id}"
     headers := http.Headers
@@ -42,7 +43,6 @@ class ItemsApi:
         --form-params={:}
         --content-type=null
 
-  /** - $id:  */
   /widgets/{id}-get --id/string:
     /widgets/{id}-get --raw --id=id
     return null

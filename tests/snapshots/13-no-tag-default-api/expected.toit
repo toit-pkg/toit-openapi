@@ -27,6 +27,7 @@ class DefaultApi:
   constructor client/openapi-runtime.ApiClient:
     api-client_ = client
 
+  /** Variant of $(ping) that returns the raw HTTP response. */
   ping --raw/True -> http.Response:
     path := "/ping"
     headers := http.Headers

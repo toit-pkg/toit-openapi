@@ -27,6 +27,7 @@ class ItemsApi:
   constructor client/openapi-runtime.ApiClient:
     api-client_ = client
 
+  /** Variant of $(search --tags) that returns the raw HTTP response. */
   search --raw/True --tags/List -> http.Response:
     path := "/search"
     headers := http.Headers
@@ -43,7 +44,6 @@ class ItemsApi:
         --form-params={:}
         --content-type=null
 
-  /** - $tags:  */
   search --tags/List:
     search --raw --tags=tags
     return null
