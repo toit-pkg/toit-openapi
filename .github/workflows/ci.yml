@@ -12,22 +12,22 @@ jobs:
         toit-version: [ v2.0.0-alpha.192, latest ]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           path: toit-openapi
 
       # While we develop with path-deps to sibling repos, CI has to
       # check them out alongside this one. Replace the org/repo or drop
       # these steps once the deps are published with URL+version.
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           repository: toit-pkg/toit-json-schema
           path: toit-json-schema
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           repository: toit-pkg/toit-gen
           path: toit-gen
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           repository: toit-pkg/toit-openapi-runtime
           path: toit-openapi-runtime
