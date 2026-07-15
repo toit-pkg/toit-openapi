@@ -1,0 +1,109 @@
+# A "typical" API exercising the common feature set in one fixture: models,
+# path/query/header params, JSON request/response bodies, array round trips
+# and security. Its golden shows reviewers the full generated output of a
+# realistic client, so generator changes are visible at a glance in one diff.
+openapi: 3.1.0
+info:
+  title: Typical API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com/v1
+security:
+  - api_key: []
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      tags: [pets]
+      description: Lists all pets, optionally filtered.
+      parameters:
+        - name: kind
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pet'
+    post:
+      operationId: createPet
+      tags: [pets]
+      description: Creates a pet.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pet'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+  /pets/{petId}:
+    get:
+      operationId: getPet
+      tags: [pets]
+      description: Fetches one pet by id.
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: X-Trace-Id
+          in: header
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+  /health:
+    get:
+      operationId: health
+      tags: [status]
+      description: Public health check.
+      security: []
+      responses:
+        '200':
+          description: OK
+components:
+  securitySchemes:
+    api_key:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+  schemas:
+    Pet:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        tag:
+          type: string
+        owner:
+          $ref: '#/components/schemas/Owner'
+    Owner:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string

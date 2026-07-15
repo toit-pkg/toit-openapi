@@ -20,10 +20,12 @@ import .e2e.array-round-trip.api as array-round-trip
 import .e2e.array-round-trip.models as array-round-trip-models
 import .e2e.nullable-ref-and-array.api as nullable-ref
 import .e2e.nullable-ref-and-array.models as nullable-ref-models
+import .e2e.security.api as security
 
 main:
   test-get-with-query
   test-authentication
+  test-security
   test-path-param
   test-header-param
   test-cookie-param
@@ -77,35 +79,79 @@ test-get-with-query:
 
 test-authentication:
   with-server: | server/TestServer |
-    // Tag-level authentication is applied to every request of that tag.
-    api := get-with-query.Api --api-client=(make-client_ server)
-    key-auth := openapi-runtime.ApiKeyAuth --location="header" --param-name="X-Api-Key" --api-key="s3cret"
-    api.items-api.authentication = key-auth
-    api.items-api.search --raw --q="frog"
-    request := server.only-request
-    expect-equals "s3cret" (request.headers.single "X-Api-Key")
-
-    // Client-level authentication is the default when no tag-level
-    //   authentication is set.
-    server.recorded.clear
+    // Client-level authentication is applied to operations without
+    //   security requirements.
     basic-auth := openapi-runtime.HttpBasicAuth --username="u" --password="p"
     client := openapi-runtime.ApiClient server.network
         --base-path=server.base-path
         --authentication=basic-auth
-    api = get-with-query.Api --api-client=client
+    api := get-with-query.Api --api-client=client
     api.items-api.search --raw --q="frog"
-    request = server.only-request
+    request := server.only-request
     expect ((request.headers.single "Authorization").starts-with "Basic ")
-    expect-null (request.headers.single "X-Api-Key")
 
-    // Tag-level authentication wins over the client-level default.
+    // A per-call authentication overrides the client-level default.
     server.recorded.clear
-    override-auth := openapi-runtime.ApiKeyAuth --location="header" --param-name="X-Api-Key" --api-key="override"
-    api.items-api.authentication = override-auth
-    api.items-api.search --raw --q="frog"
+    override-auth := openapi-runtime.ApiKeyAuth --location="header" --param-name="X-Override" --api-key="o1"
+    client.invoke-api --path="/search"
+        --method="GET"
+        --query-params=[]
+        --header-params=http.Headers
+        --form-params={:}
+        --content-type=null
+        --authentication=override-auth
     request = server.only-request
-    expect-equals "override" (request.headers.single "X-Api-Key")
+    expect-equals "o1" (request.headers.single "X-Override")
     expect-null (request.headers.single "Authorization")
+
+test-security:
+  with-server: | server/TestServer |
+    api := security.Api --api-client=(make-client_ server)
+    key-auth := openapi-runtime.ApiKeyAuth --location="header" --param-name="X-API-KEY" --api-key="k1"
+    api.put-authentication "api_key" key-auth
+
+    // The document-level requirement is resolved from the scheme map.
+    api.items-api.get-secure --raw
+    request := server.only-request
+    expect-equals "k1" (request.headers.single "X-API-KEY")
+
+    // AND requirement: both schemes of the alternative are applied, and
+    //   schemes outside the requirement are not.
+    id-auth := openapi-runtime.ApiKeyAuth --location="query" --param-name="appId" --api-key="id-7"
+    app-key-auth := openapi-runtime.ApiKeyAuth --location="query" --param-name="appKey" --api-key="key-9"
+    api.put-authentication "app_id" id-auth
+    api.put-authentication "app_key" app-key-auth
+    server.recorded.clear
+    api.items-api.get-both --raw
+    request = server.only-request
+    expect-equals "id-7" (request.query.get "appId")
+    expect-equals "key-9" (request.query.get "appKey")
+    expect-null (request.headers.single "X-API-KEY")
+
+    // Optional requirement: authenticate when a scheme is configured.
+    server.recorded.clear
+    api.items-api.get-optional --raw
+    request = server.only-request
+    expect-equals "k1" (request.headers.single "X-API-KEY")
+
+    // Optional requirement without configured schemes: unauthenticated.
+    api2 := security.Api --api-client=(make-client_ server)
+    server.recorded.clear
+    api2.items-api.get-optional --raw
+    request = server.only-request
+    expect-null (request.headers.single "X-API-KEY")
+
+    // Public operation (security: []): no security threading at all.
+    server.recorded.clear
+    api2.items-api.get-public --raw
+    request = server.only-request
+    expect-null (request.headers.single "X-API-KEY")
+
+    // Unsatisfiable requirement throws before any request is sent.
+    server.recorded.clear
+    expect-throw "AUTHENTICATION_MISSING":
+      api2.items-api.get-secure --raw
+    expect server.recorded.is-empty
 
 test-path-param:
   with-server: | server/TestServer |

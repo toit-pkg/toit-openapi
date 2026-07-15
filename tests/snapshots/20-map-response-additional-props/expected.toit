@@ -4,38 +4,30 @@ import openapi-runtime
 import .models
 import encoding.json
 
-class Api:
-  api-client_/openapi-runtime.ApiClient? := ?
+class Api extends openapi-runtime.ApiBase:
   store-api_/StoreApi? := null
 
   constructor --api-client/openapi-runtime.ApiClient:
-    api-client_ = api-client
+    super api-client
 
 
   constructor network/net.Client --authentication/openapi-runtime.Authentication?=null:
-    api-client_ = openapi-runtime.ApiClient network
+    client := openapi-runtime.ApiClient network
         --base-path=""
         --authentication=authentication
-
-  close:
-    if (not api-client_):
-      return
-    api-client_.close
-    api-client_ = null
+    super client
 
   store-api -> StoreApi:
     if (not store-api_):
-      store-api_ = StoreApi api-client_
+      store-api_ = StoreApi api-client
     return store-api_
 
 
 class StoreApi:
-  authentication/openapi-runtime.Authentication? := null
   api-client_/openapi-runtime.ApiClient := ?
 
-  constructor client/openapi-runtime.ApiClient --auth/openapi-runtime.Authentication?=null:
+  constructor client/openapi-runtime.ApiClient:
     api-client_ = client
-    authentication = auth
 
   get-inventory --raw/True -> http.Response:
     path := "/inventory"
@@ -48,7 +40,6 @@ class StoreApi:
         --header-params=headers
         --form-params={:}
         --content-type=null
-        --authentication=authentication
 
   get-inventory -> Map:
     response := get-inventory --raw
@@ -65,7 +56,6 @@ class StoreApi:
         --header-params=headers
         --form-params={:}
         --content-type=null
-        --authentication=authentication
 
   get-pet-index -> Map:
     response := get-pet-index --raw

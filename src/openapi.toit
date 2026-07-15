@@ -151,7 +151,6 @@ class OpenApi extends Extensionable_:
     that can be used. Only one of the security requirement objects need
     to be satisfied to authorize a request.
   Individual operations can override this definition.
-  // TODO(florian): empty security requirement {} doesn't work.
   To make security optional, an empty security requirement ({}) can be included in the array.
   */
   security/List?  // of SecurityRequirement.
@@ -952,7 +951,6 @@ class Operation extends Extensionable_:
     that can be used. Only one of the security requirement objects need
     to be satisfied to authorize a request.
 
-  // TODO(florian): empty security requirement {} doesn't work.
   To make security optional, an empty security requirement ({}) can be
     included in the list.
 

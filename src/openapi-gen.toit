@@ -333,6 +333,9 @@ class ApiGenerator:
   http_/toit-gen.Import? := null
   net_/toit-gen.Import? := null
   runtime_/toit-gen.Import? := null
+  /// The document-level `security` requirements; operations without their
+  ///   own `security` inherit these.
+  document-security_/List? := null  // Of SecurityRequirement.
   /// $api-library_ is captured here so $ensure-json-import_ can lazily add
   ///   `import encoding.json` only when an operation actually needs it.
   api-library_/toit-gen.Library? := null
@@ -344,12 +347,17 @@ class ApiGenerator:
   http-headers_/toit-gen.Class ::= toit-gen.Class.imported "Headers"
   net-client_/toit-gen.Class ::= toit-gen.Class.imported "Client"
   api-client_/toit-gen.Class ::= toit-gen.Class.imported "ApiClient"
+  api-base_/toit-gen.Class ::= toit-gen.Class.imported "ApiBase"
   authentication_/toit-gen.Class ::= toit-gen.Class.imported "Authentication"
+  api-key-auth_/toit-gen.Class ::= toit-gen.Class.imported "ApiKeyAuth"
+  http-bearer-auth_/toit-gen.Class ::= toit-gen.Class.imported "HttpBearerAuth"
 
   // Free-standing imported names treated as $RefTarget via $VarDefinition.
   encode-query-param_/toit-gen.VarDefinition ::= imported-name_ "encode-query-param"
   encode-header-param_/toit-gen.VarDefinition ::= imported-name_ "encode-header-param"
   encode-path-param_/toit-gen.VarDefinition ::= imported-name_ "encode-path-param"
+  /// The `api-client` field inherited from `openapi-runtime.ApiBase`.
+  inherited-api-client_/toit-gen.VarDefinition ::= imported-name_ "api-client"
   json-encode_/toit-gen.VarDefinition ::= imported-name_ "encode"
   json-decode_/toit-gen.VarDefinition ::= imported-name_ "decode"
 
@@ -423,20 +431,18 @@ class ApiGenerator:
     //   (e.g. a request body typed as `Pet`) become real types after this.
     populate-models_ openapi --program=program --api-library=library
 
-    // class Api:
-    //   api-client_/openapi-runtime.ApiClient? := null
+    // class Api extends openapi-runtime.ApiBase:
+    // The `api-client` field, `put-authentication` and `close` are
+    //   inherited from the base class.
     api-class := library.add-class "Api"
     api-class.name = "Api"
+    api-class.super-class = runtime_.refer api-base_
 
-    api-client-field := api-class.add-field "api-client"
-        --type=(runtime_.refer api-client_)
-        --is-nullable=true
-        --is-final=false
-        --is-private=true
+    document-security_ = openapi.security
 
-    add-api-constructors_ api-class api-client-field
+    add-api-constructors_ api-class
         --base-path=base-path-of_ openapi
-    add-close-method_ api-class api-client-field
+        --security-schemes=security-schemes-of_ openapi
 
     // Build per-tag classes plus their getters/fields on Api.
     tag-descriptions := {:}
@@ -463,7 +469,7 @@ class ApiGenerator:
       tag-classes[tag-name] = library.add-class preferred
 
     tag-classes.do: | _ tag-class/toit-gen.Class |
-      add-tag-getter_ api-class tag-class api-client-field
+      add-tag-getter_ api-class tag-class inherited-api-client_
 
     tag-classes.do: | tag-name/string tag-class/toit-gen.Class |
       description := tag-descriptions.get tag-name
@@ -491,24 +497,33 @@ class ApiGenerator:
   Adds the two `Api` constructors:
     - `constructor --api-client/openapi-runtime.ApiClient`
     - `constructor network/net.Client --authentication/openapi-runtime.Authentication?=null`
+
+  The network constructor additionally gets one named string parameter per
+    `apiKey` or `http: bearer` scheme in $security-schemes (e.g. `--api-key`
+    for a scheme named `api_key`). A given value is registered via
+    `put-authentication`, with the scheme's location and parameter name
+    baked in from the spec.
   */
-  add-api-constructors_ api-class/toit-gen.Class field/toit-gen.VarDefinition
-      --base-path/string -> none:
+  add-api-constructors_ api-class/toit-gen.Class
+      --base-path/string
+      --security-schemes/Map -> none:
     // constructor --api-client/openapi-runtime.ApiClient:
-    //   api-client_ = api-client
+    //   super api-client
     api-client-param := toit-gen.VarDefinition.parameter "api-client"
         --type=(runtime_.refer api-client_)
         --is-named=true
     api-client-param.name = "api-client"
     body1 := toit-gen.Sequence
-    body1.assign field (toit-gen.Ref api-client-param)
+    body1.call toit-gen.Super --arguments=[toit-gen.Ref api-client-param]
     api-class.add-constructor --parameters=[api-client-param] body1
 
     // constructor network/net.Client
     //     --authentication/openapi-runtime.Authentication?=null:
-    //   api-client_ = openapi-runtime.ApiClient network
+    //   client := openapi-runtime.ApiClient network
     //       --base-path="<servers[0].url>"
     //       --authentication=authentication
+    //   <per-scheme put-authentication registrations>
+    //   super client
     network-param := toit-gen.VarDefinition.parameter "network"
         --type=(net_.refer net-client_)
     network-param.name = "network"
@@ -517,45 +532,74 @@ class ApiGenerator:
         --is-named=true
         --is-nullable=true
         --initial=(toit-gen.Literal null)
+    auth-param.name = "authentication"
+    scheme-params := []  // Of [VarDefinition, scheme-name/string, SecurityScheme].
+    security-schemes.do: | name/string scheme/SecurityScheme |
+      is-bearer := scheme.type == SecurityScheme.HTTP
+          and (scheme as SecuritySchemeHttp).scheme == "bearer"
+      if scheme.type != SecurityScheme.API-KEY and not is-bearer: continue.do
+      scheme-param := toit-gen.VarDefinition.parameter (namer.toit-member-name name)
+          --type=(toit-gen.Ref type-resolver.string-class)
+          --is-named=true
+          --is-nullable=true
+          --initial=(toit-gen.Literal null)
+      scheme-params.add [scheme-param, name, scheme]
     body2 := toit-gen.Sequence
-    body2.assign field
-        toit-gen.Call (runtime_.refer api-client_)
+    client-vd := body2.define "client"
+        (toit-gen.Call (runtime_.refer api-client_)
             --arguments=[
               toit-gen.Ref network-param,
               toit-gen.Named.external "base-path" (toit-gen.Literal base-path),
               toit-gen.Named.external "authentication" (toit-gen.Ref auth-param),
+            ])
+    scheme-params.do: | triple/List |
+      scheme-param/toit-gen.VarDefinition := triple[0]
+      name/string := triple[1]
+      scheme/SecurityScheme := triple[2]
+      auth-expr/toit-gen.Expression := ?
+      if scheme.type == SecurityScheme.API-KEY:
+        api-key-scheme := scheme as SecuritySchemeApiKey
+        auth-expr = toit-gen.Call (runtime_.refer api-key-auth_)
+            --arguments=[
+              toit-gen.Named.external "location" (toit-gen.Literal api-key-scheme.in),
+              toit-gen.Named.external "param-name" (toit-gen.Literal api-key-scheme.name),
+              toit-gen.Named.external "api-key" (toit-gen.Ref scheme-param),
             ]
-    api-class.add-constructor --parameters=[network-param, auth-param] body2
+      else:
+        auth-expr = toit-gen.Call (runtime_.refer http-bearer-auth_) "token"
+            --arguments=[toit-gen.Ref scheme-param]
+      register := toit-gen.Sequence
+      register.invoke (toit-gen.Ref client-vd) "put-authentication"
+          --arguments=[toit-gen.Literal name, auth-expr]
+      body2.iff (toit-gen.Ref scheme-param) register
+    body2.call toit-gen.Super --arguments=[toit-gen.Ref client-vd]
+    ctor-params := [network-param, auth-param]
+    scheme-params.do: | triple/List | ctor-params.add triple[0]
+    api-class.add-constructor --parameters=ctor-params body2
 
   /**
-  Adds the `close` method:
+  The `components.securitySchemes` of $openapi, keyed by scheme name.
 
-    close -> none:
-      if not api-client_: return
-      api-client_.close
-      api-client_ = null
+  References are skipped: constructor convenience needs the scheme's
+    metadata (location, parameter name) at generation time.
   */
-  add-close-method_ api-class/toit-gen.Class field/toit-gen.VarDefinition -> none:
-    body := toit-gen.Sequence
-    // if not api-client_: return
-    early-return := toit-gen.Sequence
-    early-return.ret
-    body.iff
-        (toit-gen.Unary "not" (toit-gen.Ref field))
-        early-return
-    // api-client_.close
-    body.invoke (toit-gen.Ref field) "close"
-    // api-client_ = null
-    body.assign field (toit-gen.Literal null)
-    api-class.add-method "close" --parameters=[] body
+  static security-schemes-of_ openapi/OpenApi -> Map:
+    components := openapi.components
+    if not components or not components.security-schemes: return {:}
+    result := {:}
+    components.security-schemes.do: | name/string scheme |
+      if scheme is SecurityScheme: result[name] = scheme
+    return result
 
   /**
   Adds the lazy-init field + getter on `Api` for one per-tag API class:
 
-    pets-api_/PetsApi? := null
-    pets-api -> PetsApi:
-      if not pets-api_: pets-api_ = PetsApi api-client_
-      return pets-api_
+  ```
+  pets-api_/PetsApi? := null
+  pets-api -> PetsApi:
+    if not pets-api_: pets-api_ = PetsApi api-client
+    return pets-api_
+  ```
   */
   add-tag-getter_ api-class/toit-gen.Class
       tag-class/toit-gen.Class
@@ -584,33 +628,19 @@ class ApiGenerator:
   Builds a per-tag class with its constructor and operations.
   */
   build-tag-class_ tag-class/toit-gen.Class --operations/List -> none:
-    // authentication/openapi-runtime.Authentication? := null
-    auth-field := tag-class.add-field "authentication"
-        --type=(runtime_.refer authentication_)
-        --is-nullable=true
-        --is-final=false
-        --initial=(toit-gen.Literal null)
     // api-client_/openapi-runtime.ApiClient
     api-client-field := tag-class.add-field "api-client"
         --type=(runtime_.refer api-client_)
         --is-final=false
         --is-private=true
 
-    // constructor client/openapi-runtime.ApiClient
-    //     --auth/openapi-runtime.Authentication?=null:
+    // constructor client/openapi-runtime.ApiClient:
     //   api-client_ = client
-    //   authentication = auth
     client-param := toit-gen.VarDefinition.parameter "client"
         --type=(runtime_.refer api-client_)
-    auth-param := toit-gen.VarDefinition.parameter "auth"
-        --type=(runtime_.refer authentication_)
-        --is-named=true
-        --is-nullable=true
-        --initial=(toit-gen.Literal null)
     body := toit-gen.Sequence
     body.assign api-client-field (toit-gen.Ref client-param)
-    body.assign auth-field (toit-gen.Ref auth-param)
-    tag-class.add-constructor --parameters=[client-param, auth-param] body
+    tag-class.add-constructor --parameters=[client-param] body
 
     operations.do: | entry/List |
       build-operation_ tag-class
@@ -618,7 +648,6 @@ class ApiGenerator:
           --method=entry[1]
           --operation=entry[2]
           --api-client-field=api-client-field
-          --auth-field=auth-field
 
   /**
   Builds the two methods (raw + regular variant) for one $operation.
@@ -627,8 +656,7 @@ class ApiGenerator:
       --path/string
       --method/string
       --operation/Operation
-      --api-client-field/toit-gen.VarDefinition
-      --auth-field/toit-gen.VarDefinition -> none:
+      --api-client-field/toit-gen.VarDefinition -> none:
     op-name := operation.operation-id
         ? namer.toit-member-name operation.operation-id
         : namer.toit-member-name "$path-$method"
@@ -656,6 +684,17 @@ class ApiGenerator:
 
     response-info := response-info_ operation --hint="$path-$(method)-response"
 
+    // The operation's `security` overrides the document-level one; an
+    //   explicit empty list marks the operation public. The requirement is
+    //   emitted as a list of alternatives, each listing the scheme names
+    //   that must all be configured (see `resolve-security` in the runtime).
+    effective-security/List? := operation.security or document-security_
+    security-expr/toit-gen.Expression? := null
+    if effective-security and not effective-security.is-empty:
+      alternatives := effective-security.map: | requirement/SecurityRequirement |
+        toit-gen.ListLiteral (requirement.requirements.keys.map: toit-gen.Literal it)
+      security-expr = toit-gen.ListLiteral alternatives
+
     // VarDefinitions for the formal parameters: built once per variant since
     // an AST node can't appear under two Function nodes.
     fresh-params := :
@@ -682,7 +721,7 @@ class ApiGenerator:
             --request-body-shape=request-body-shape
             --has-cookie=has-cookie
             --api-client-field=api-client-field
-            --auth-field=auth-field)
+            --security-expr=security-expr)
     if operation.deprecated: raw-fn.toitdoc = ["Deprecated."]
 
     // --- Regular variant ---
@@ -813,7 +852,7 @@ class ApiGenerator:
       --request-body-shape/WireShape_?=null
       --has-cookie/bool
       --api-client-field/toit-gen.VarDefinition
-      --auth-field/toit-gen.VarDefinition -> toit-gen.Sequence:
+      --security-expr/toit-gen.Expression? -> toit-gen.Sequence:
     body := toit-gen.Sequence
     // path := "<path>"
     // headers := http.Headers
@@ -874,8 +913,9 @@ class ApiGenerator:
       toit-gen.Named.external "header-params" (toit-gen.Ref headers-var),
       toit-gen.Named.external "form-params" (toit-gen.Literal {:}),
       toit-gen.Named.external "content-type" (toit-gen.Literal null),
-      toit-gen.Named.external "authentication" (toit-gen.Ref auth-field),
     ]
+    if security-expr:
+      invoke-args.add (toit-gen.Named.external "security" security-expr)
     if request-body-arg:
       body-expr/toit-gen.Expression := toit-gen.Ref request-body-arg
       if request-body-shape:

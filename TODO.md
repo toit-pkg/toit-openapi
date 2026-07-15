@@ -56,18 +56,12 @@ elsewhere. Track them here so they don't get forgotten.
 
 ## Out of scope, in rough priority order
 
-1. Security / `securitySchemes` wiring, Phase B (scheme-aware). Phase A
-   is done: the tag-class `authentication` field and the convenience
-   constructor's `--authentication` thread into `invoke-api`, with
-   tag-level winning over client-level. Phase B: key authentications by
-   scheme name on `ApiClient`, emit each operation's effective security
-   requirement (OR-of-ANDs; per-op override; `{}` = optional — needs the
-   parser TODO at `src/openapi.toit:154`), and generate per-scheme
-   convenience (e.g. `--api-key=`) from `securitySchemes` metadata.
-   Decide whether the tag-level field survives Phase B or the scheme map
-   replaces it. Defer `oauth2` flows to `toit-oauth`; note that
-   `HttpBearerAuthCallback_` caches the first token forever, which would
-   defeat toit-oauth's token refresh — make it delegate instead.
+1. `oauth2` / `openIdConnect` security schemes. The scheme map accepts
+   user-supplied `Authentication` objects under those names already;
+   automating them means wiring `toit-oauth` behind `HttpBearerAuth` and
+   carrying `oauth2` scopes through. Prerequisite: fix
+   `HttpBearerAuthCallback_`, which caches the first token forever and
+   would defeat toit-oauth's token refresh — make it delegate instead.
 2. Other request-body media types: `multipart/form-data` and
    `application/x-www-form-urlencoded`. Runtime already accepts
    `--form-params`; the generator just needs to route to it.
@@ -77,5 +71,6 @@ elsewhere. Track them here so they don't get forgotten.
 5. Multiple response media types and response headers.
 6. `webhooks` / `callbacks` / `links`.
 7. Multi-server fan-out and `{variable}` substitution in `servers[]`.
-8. Parser TODOs (`src/openapi.toit:154`, `:955`, `:1885`): empty
-   security requirement `{}`, real `RuntimeExpression` parsing.
+8. Parser TODO (`src/openapi.toit:1883`): real `RuntimeExpression`
+   parsing. (The empty-security-requirement `{}` TODOs turned out to
+   already work and are covered by the security fixtures.)

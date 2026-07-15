@@ -2,44 +2,36 @@ import http
 import net
 import openapi-runtime
 
-class Api:
-  api-client_/openapi-runtime.ApiClient? := ?
+class Api extends openapi-runtime.ApiBase:
   pets-api_/PetsApi? := null
   users-api_/UsersApi? := null
 
   constructor --api-client/openapi-runtime.ApiClient:
-    api-client_ = api-client
+    super api-client
 
 
   constructor network/net.Client --authentication/openapi-runtime.Authentication?=null:
-    api-client_ = openapi-runtime.ApiClient network
+    client := openapi-runtime.ApiClient network
         --base-path=""
         --authentication=authentication
-
-  close:
-    if (not api-client_):
-      return
-    api-client_.close
-    api-client_ = null
+    super client
 
   pets-api -> PetsApi:
     if (not pets-api_):
-      pets-api_ = PetsApi api-client_
+      pets-api_ = PetsApi api-client
     return pets-api_
 
   users-api -> UsersApi:
     if (not users-api_):
-      users-api_ = UsersApi api-client_
+      users-api_ = UsersApi api-client
     return users-api_
 
 
 class PetsApi:
-  authentication/openapi-runtime.Authentication? := null
   api-client_/openapi-runtime.ApiClient := ?
 
-  constructor client/openapi-runtime.ApiClient --auth/openapi-runtime.Authentication?=null:
+  constructor client/openapi-runtime.ApiClient:
     api-client_ = client
-    authentication = auth
 
   list-pets --raw/True -> http.Response:
     path := "/pets"
@@ -52,7 +44,6 @@ class PetsApi:
         --header-params=headers
         --form-params={:}
         --content-type=null
-        --authentication=authentication
 
   list-pets:
     list-pets --raw
@@ -60,12 +51,10 @@ class PetsApi:
 
 
 class UsersApi:
-  authentication/openapi-runtime.Authentication? := null
   api-client_/openapi-runtime.ApiClient := ?
 
-  constructor client/openapi-runtime.ApiClient --auth/openapi-runtime.Authentication?=null:
+  constructor client/openapi-runtime.ApiClient:
     api-client_ = client
-    authentication = auth
 
   list-users --raw/True -> http.Response:
     path := "/users"
@@ -78,7 +67,6 @@ class UsersApi:
         --header-params=headers
         --form-params={:}
         --content-type=null
-        --authentication=authentication
 
   list-users:
     list-users --raw

@@ -4,38 +4,30 @@ import openapi-runtime
 import .models
 import encoding.json
 
-class Api:
-  api-client_/openapi-runtime.ApiClient? := ?
+class Api extends openapi-runtime.ApiBase:
   pets-api_/PetsApi? := null
 
   constructor --api-client/openapi-runtime.ApiClient:
-    api-client_ = api-client
+    super api-client
 
 
   constructor network/net.Client --authentication/openapi-runtime.Authentication?=null:
-    api-client_ = openapi-runtime.ApiClient network
+    client := openapi-runtime.ApiClient network
         --base-path=""
         --authentication=authentication
-
-  close:
-    if (not api-client_):
-      return
-    api-client_.close
-    api-client_ = null
+    super client
 
   pets-api -> PetsApi:
     if (not pets-api_):
-      pets-api_ = PetsApi api-client_
+      pets-api_ = PetsApi api-client
     return pets-api_
 
 
 class PetsApi:
-  authentication/openapi-runtime.Authentication? := null
   api-client_/openapi-runtime.ApiClient := ?
 
-  constructor client/openapi-runtime.ApiClient --auth/openapi-runtime.Authentication?=null:
+  constructor client/openapi-runtime.ApiClient:
     api-client_ = client
-    authentication = auth
 
   create-pet --raw/True body/Pet -> http.Response:
     path := "/pets"
@@ -49,7 +41,6 @@ class PetsApi:
         --header-params=headers
         --form-params={:}
         --content-type=null
-        --authentication=authentication
         --body=json.encode body.to-json
 
   create-pet body-1/Pet -> Pet:

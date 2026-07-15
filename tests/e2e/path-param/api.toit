@@ -2,38 +2,30 @@ import http
 import net
 import openapi-runtime
 
-class Api:
-  api-client_/openapi-runtime.ApiClient? := ?
+class Api extends openapi-runtime.ApiBase:
   items-api_/ItemsApi? := null
 
   constructor --api-client/openapi-runtime.ApiClient:
-    api-client_ = api-client
+    super api-client
 
 
   constructor network/net.Client --authentication/openapi-runtime.Authentication?=null:
-    api-client_ = openapi-runtime.ApiClient network
+    client := openapi-runtime.ApiClient network
         --base-path=""
         --authentication=authentication
-
-  close:
-    if (not api-client_):
-      return
-    api-client_.close
-    api-client_ = null
+    super client
 
   items-api -> ItemsApi:
     if (not items-api_):
-      items-api_ = ItemsApi api-client_
+      items-api_ = ItemsApi api-client
     return items-api_
 
 
 class ItemsApi:
-  authentication/openapi-runtime.Authentication? := null
   api-client_/openapi-runtime.ApiClient := ?
 
-  constructor client/openapi-runtime.ApiClient --auth/openapi-runtime.Authentication?=null:
+  constructor client/openapi-runtime.ApiClient:
     api-client_ = client
-    authentication = auth
 
   get-item --raw/True --item-id/string -> http.Response:
     path := "/items/{itemId}"
@@ -49,7 +41,6 @@ class ItemsApi:
         --header-params=headers
         --form-params={:}
         --content-type=null
-        --authentication=authentication
 
   /** - $item-id:  */
   get-item --item-id/string:

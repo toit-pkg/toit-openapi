@@ -1,0 +1,66 @@
+openapi: 3.1.0
+info:
+  title: Security schemes
+  version: 1.0.0
+security:
+  - api_key: []
+paths:
+  /secure:
+    get:
+      operationId: getSecure
+      tags: [items]
+      responses:
+        '200':
+          description: OK
+  /both:
+    get:
+      operationId: getBoth
+      tags: [items]
+      security:
+        - app_id: []
+          app_key: []
+      responses:
+        '200':
+          description: OK
+  /optional:
+    get:
+      operationId: getOptional
+      tags: [items]
+      security:
+        - {}
+        - api_key: []
+      responses:
+        '200':
+          description: OK
+  /public:
+    get:
+      operationId: getPublic
+      tags: [items]
+      security: []
+      responses:
+        '200':
+          description: OK
+components:
+  securitySchemes:
+    api_key:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+    app_id:
+      type: apiKey
+      in: query
+      name: appId
+    app_key:
+      type: apiKey
+      in: query
+      name: appKey
+    bearer_auth:
+      type: http
+      scheme: bearer
+    petstore_auth:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: https://example.org/authorize
+          scopes:
+            read:items: Read access

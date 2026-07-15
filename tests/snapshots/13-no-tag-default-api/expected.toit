@@ -2,38 +2,30 @@ import http
 import net
 import openapi-runtime
 
-class Api:
-  api-client_/openapi-runtime.ApiClient? := ?
+class Api extends openapi-runtime.ApiBase:
   default-api_/DefaultApi? := null
 
   constructor --api-client/openapi-runtime.ApiClient:
-    api-client_ = api-client
+    super api-client
 
 
   constructor network/net.Client --authentication/openapi-runtime.Authentication?=null:
-    api-client_ = openapi-runtime.ApiClient network
+    client := openapi-runtime.ApiClient network
         --base-path=""
         --authentication=authentication
-
-  close:
-    if (not api-client_):
-      return
-    api-client_.close
-    api-client_ = null
+    super client
 
   default-api -> DefaultApi:
     if (not default-api_):
-      default-api_ = DefaultApi api-client_
+      default-api_ = DefaultApi api-client
     return default-api_
 
 
 class DefaultApi:
-  authentication/openapi-runtime.Authentication? := null
   api-client_/openapi-runtime.ApiClient := ?
 
-  constructor client/openapi-runtime.ApiClient --auth/openapi-runtime.Authentication?=null:
+  constructor client/openapi-runtime.ApiClient:
     api-client_ = client
-    authentication = auth
 
   ping --raw/True -> http.Response:
     path := "/ping"
@@ -46,7 +38,6 @@ class DefaultApi:
         --header-params=headers
         --form-params={:}
         --content-type=null
-        --authentication=authentication
 
   ping:
     ping --raw
