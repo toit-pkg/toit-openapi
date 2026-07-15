@@ -35,20 +35,17 @@ class PetsApi:
     headers := http.Headers
     query-params := []
     cookie-params := []
-    payload := body.map: | it |
-      it.to-json
     return api-client_.invoke-api --path=path
         --method="POST"
         --query-params=query-params
         --header-params=headers
         --form-params={:}
         --content-type="application/json"
-        --body=json.encode payload
+        --body=json.encode (body.map: | it | it.to-json)
 
   create-pets body/List -> List:
     response := create-pets --raw body
-    decoded := json.decode response.body.read-all
-    return decoded.map: | it |
+    return (json.decode response.body.read-all).map: | it |
       models.Pet.from-json it
 
 

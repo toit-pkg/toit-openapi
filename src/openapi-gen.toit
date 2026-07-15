@@ -83,19 +83,6 @@ class WireShape_:
     return element.needs-codec
 
   /**
-  True iff $encode/$decode emit a `expr.map: | ... |` block.
-
-  Callers use this to decide whether to pull the result into its own
-    statement: toit-gen's formatter can't squeeze a block inside a
-    parenthesized argument like `json.encode (...)` without breaking
-    indentation. $MODEL stays inline because `expr.to-json` is a plain
-    call.
-  */
-  produces-block -> bool:
-    if kind == PASSTHROUGH or kind == MODEL: return false
-    return needs-codec
-
-  /**
   Builds an expression that converts $expr (a typed value) into its
     JSON-encodable form. Returns $expr unchanged when $needs-codec is
     false.
@@ -769,12 +756,6 @@ class ApiGenerator:
       decoded-expr/toit-gen.Expression := toit-gen.Call
           (json-imp.refer json-decode_)
           --arguments=[body-bytes]
-      // Same toit-gen formatter workaround as the request-body path: when
-      //   shape.decode emits a `.map: | ... |` block, hoist the decoded
-      //   value to its own statement so the block sits at statement level.
-      if response-info.shape.produces-block:
-        decoded-vd := regular-body.define "decoded" decoded-expr
-        decoded-expr = toit-gen.Ref decoded-vd
       regular-body.ret (response-info.shape.decode decoded-expr)
       regular-return-type = response-info.type
     else:
@@ -928,12 +909,6 @@ class ApiGenerator:
         // shape.encode walks the wire shape into JSON-encodable form
         //   (e.g. for a list of Pet → body.map: it.to-json).
         encoded-form := request-body-shape.encode body-expr
-        if request-body-shape.produces-block:
-          // toit-gen's formatter can't squeeze a `.map: | it | …` block
-          //   inside a parenthesized argument, so we hoist into a local.
-          //   See TODO in toit-gen for the formatter fix.
-          payload-vd := body.define "payload" encoded-form
-          encoded-form = toit-gen.Ref payload-vd
         if is-form:
           form-params-expr = encoded-form
         else:

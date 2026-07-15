@@ -49,14 +49,11 @@ elsewhere. Track them here so they don't get forgotten.
 
 ### `toit-gen`
 
-- **formatter can't handle a `.map: | … |` block inside a parenthesized
-  argument.** `json.encode (body.map: | it | it.to-json)` comes out with
-  the closing `)` on a wrongly-indented line and the parser rejects it.
-  Phase 5b works around it by hoisting any `.map` walk into a local
-  before passing to `json.encode`. The hoist is gated on
-  `WireShape_.produces-block`. When the formatter learns to wrap the
-  block at the right indent, drop the `produces-block` branch in
-  `openapi-gen.toit`.
+- Done: blocks inside a parenthesized call argument render correctly
+  (`json.encode (body.map: | it | it.to-json)` inline for
+  single-expression bodies; multi-statement bodies stream at an indent
+  deeper than the argument continuation lines), so the `produces-block`
+  hoist is gone.
 
 ## Out of scope, in rough priority order
 

@@ -61,8 +61,7 @@ class StoreApi:
 
   get-pet-index -> Map:
     response := get-pet-index --raw
-    decoded := json.decode response.body.read-all
-    return decoded.map: | _ v |
+    return (json.decode response.body.read-all).map: | _ v |
       models.Pet.from-json v
 
 

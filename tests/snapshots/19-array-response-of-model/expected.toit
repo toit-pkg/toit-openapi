@@ -44,8 +44,7 @@ class PetsApi:
 
   list-pets -> List:
     response := list-pets --raw
-    decoded := json.decode response.body.read-all
-    return decoded.map: | it |
+    return (json.decode response.body.read-all).map: | it |
       models.Pet.from-json it
 
 

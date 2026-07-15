@@ -65,8 +65,7 @@ class PetsApi:
     response := list-pets --raw
         --kind=kind
         --limit=limit
-    decoded := json.decode response.body.read-all
-    return decoded.map: | it |
+    return (json.decode response.body.read-all).map: | it |
       models.Pet.from-json it
 
   /** Variant of $(create-pet body) that returns the raw HTTP response. */
