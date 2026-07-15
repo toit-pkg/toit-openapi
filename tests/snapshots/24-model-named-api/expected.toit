@@ -5,7 +5,7 @@ import .models as models
 import encoding.json
 
 class Api extends openapi-runtime.ApiBase:
-  pets-api_/PetsApi? := null
+  items-api_/ItemsApi? := null
 
   constructor --api-client/openapi-runtime.ApiClient:
     super api-client
@@ -17,35 +17,33 @@ class Api extends openapi-runtime.ApiBase:
         --authentication=authentication
     super client
 
-  pets-api -> PetsApi:
-    if (not pets-api_):
-      pets-api_ = PetsApi api-client
-    return pets-api_
+  items-api -> ItemsApi:
+    if (not items-api_):
+      items-api_ = ItemsApi api-client
+    return items-api_
 
 
-class PetsApi:
+class ItemsApi:
   api-client_/openapi-runtime.ApiClient := ?
 
   constructor client/openapi-runtime.ApiClient:
     api-client_ = client
 
-  /** Variant of $(create-pet body) that returns the raw HTTP response. */
-  create-pet --raw/True body/models.Pet -> http.Response:
-    path := "/pets"
+  /** Variant of $(get-status) that returns the raw HTTP response. */
+  get-status --raw/True -> http.Response:
+    path := "/status"
     headers := http.Headers
     query-params := []
     cookie-params := []
-    headers.set "Content-Type" "application/json"
     return api-client_.invoke-api --path=path
-        --method="POST"
+        --method="GET"
         --query-params=query-params
         --header-params=headers
         --form-params={:}
         --content-type=null
-        --body=json.encode body.to-json
 
-  create-pet body/models.Pet -> models.Pet:
-    response := create-pet --raw body
-    return models.Pet.from-json (json.decode response.body.read-all)
+  get-status -> models.Api:
+    response := get-status --raw
+    return models.Api.from-json (json.decode response.body.read-all)
 
 

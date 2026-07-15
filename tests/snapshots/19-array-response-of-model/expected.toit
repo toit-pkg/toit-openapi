@@ -1,7 +1,7 @@
 import http
 import net
 import openapi-runtime
-import .models
+import .models as models
 import encoding.json
 
 class Api extends openapi-runtime.ApiBase:
@@ -46,6 +46,6 @@ class PetsApi:
     response := list-pets --raw
     decoded := json.decode response.body.read-all
     return decoded.map: | it |
-      Pet.from-json it
+      models.Pet.from-json it
 
 

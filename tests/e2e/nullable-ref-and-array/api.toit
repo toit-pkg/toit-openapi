@@ -1,7 +1,7 @@
 import http
 import net
 import openapi-runtime
-import .models
+import .models as models
 import encoding.json
 
 class Api extends openapi-runtime.ApiBase:
@@ -30,7 +30,7 @@ class PetsApi:
     api-client_ = client
 
   /** Variant of $(create-pet body) that returns the raw HTTP response. */
-  create-pet --raw/True body/Pet -> http.Response:
+  create-pet --raw/True body/models.Pet -> http.Response:
     path := "/pets"
     headers := http.Headers
     query-params := []
@@ -44,8 +44,8 @@ class PetsApi:
         --content-type=null
         --body=json.encode body.to-json
 
-  create-pet body/Pet -> Pet:
+  create-pet body/models.Pet -> models.Pet:
     response := create-pet --raw body
-    return Pet.from-json (json.decode response.body.read-all)
+    return models.Pet.from-json (json.decode response.body.read-all)
 
 

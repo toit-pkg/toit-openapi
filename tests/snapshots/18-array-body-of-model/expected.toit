@@ -1,7 +1,7 @@
 import http
 import net
 import openapi-runtime
-import .models
+import .models as models
 import encoding.json
 
 class Api extends openapi-runtime.ApiBase:

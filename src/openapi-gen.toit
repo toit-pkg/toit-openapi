@@ -396,7 +396,11 @@ class ApiGenerator:
     program.libraries.add models-lib
     type-resolver.models = schema-gen.populate program json-schemas
         --library-for-uri=:: models-lib
+    // Import with a prefix: an unprefixed `import .models` would pull the
+    //   model class names into api.toit's scope, where a schema named like
+    //   a generated class (e.g. `Api`) silently shadows it.
     type-resolver.models-import = api-library.add-relative-import "models"
+        --preferred-prefix="models"
 
   /**
   Builds a $toit-gen.VarDefinition that can be used as a RefTarget for an

@@ -1,7 +1,7 @@
 import http
 import net
 import openapi-runtime
-import .models
+import .models as models
 import encoding.json
 
 class Api extends openapi-runtime.ApiBase:
@@ -67,10 +67,10 @@ class PetsApi:
         --limit=limit
     decoded := json.decode response.body.read-all
     return decoded.map: | it |
-      Pet.from-json it
+      models.Pet.from-json it
 
   /** Variant of $(create-pet body) that returns the raw HTTP response. */
-  create-pet --raw/True body/Pet -> http.Response:
+  create-pet --raw/True body/models.Pet -> http.Response:
     path := "/pets"
     headers := http.Headers
     query-params := []
@@ -86,9 +86,9 @@ class PetsApi:
         --body=json.encode body.to-json
 
   /** Creates a pet. */
-  create-pet body/Pet -> Pet:
+  create-pet body/models.Pet -> models.Pet:
     response := create-pet --raw body
-    return Pet.from-json (json.decode response.body.read-all)
+    return models.Pet.from-json (json.decode response.body.read-all)
 
   /** Variant of $(get-pet --pet-id --x-trace-id) that returns the raw HTTP response. */
   get-pet --raw/True --pet-id/int --x-trace-id/string?=null -> http.Response:
@@ -110,11 +110,11 @@ class PetsApi:
         --security=[["api_key"]]
 
   /** Fetches one pet by id. */
-  get-pet --pet-id/int --x-trace-id/string?=null -> Pet:
+  get-pet --pet-id/int --x-trace-id/string?=null -> models.Pet:
     response := get-pet --raw
         --pet-id=pet-id
         --x-trace-id=x-trace-id
-    return Pet.from-json (json.decode response.body.read-all)
+    return models.Pet.from-json (json.decode response.body.read-all)
 
 
 class StatusApi:

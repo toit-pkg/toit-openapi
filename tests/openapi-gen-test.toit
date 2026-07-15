@@ -15,6 +15,11 @@ main:
   test-generates "tests/pet-store/bigger.yaml"
       --expected-classes=["Api", "PetApi", "StoreApi", "UserApi"]
       --expected-models=["Pet", "User", "Order"]
+  // A schema named like the generated client class: only compiles because
+  // models are imported behind the `models` prefix.
+  test-generates "tests/snapshots/24-model-named-api/spec.yaml"
+      --expected-classes=["Api", "ItemsApi"]
+      --expected-models=["Api"]
 
 /**
 Generates a client from $spec-path, asserts the expected classes and
