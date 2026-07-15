@@ -21,6 +21,8 @@ import .e2e.array-round-trip.models as array-round-trip-models
 import .e2e.nullable-ref-and-array.api as nullable-ref
 import .e2e.nullable-ref-and-array.models as nullable-ref-models
 import .e2e.security.api as security
+import .e2e.form-body.api as form-body
+import .e2e.form-body.models as form-body-models
 
 main:
   test-get-with-query
@@ -30,6 +32,7 @@ main:
   test-header-param
   test-cookie-param
   test-post-binary-body
+  test-form-body
   test-multi-tag-and-close
   test-components-schema-round-trip
   test-array-round-trip
@@ -196,6 +199,30 @@ test-post-binary-body:
     expect-equals "POST" request.method
     expect-equals "/upload" request.resource
     expect-equals body request.body
+
+test-form-body:
+  with-server: | server/TestServer |
+    api := form-body.Api --api-client=(make-client_ server)
+
+    // Inline object schema: the body is a plain Map.
+    api.items-api.login --raw {"username": "bob", "password": "s3/cret"}
+    request := server.only-request
+    expect-equals "application/x-www-form-urlencoded"
+        (request.headers.single "Content-Type")
+    // Keys and values are URL-encoded; entries keep insertion order.
+    expect-equals "username=bob&password=s3%2Fcret" request.body.to-string
+
+    // Model schema: the body is serialized through to-json.
+    server.recorded.clear
+    credentials := form-body-models.Credentials.from-json {
+      "username": "alice",
+      "password": "p w",
+    }
+    api.items-api.register --raw credentials
+    request = server.only-request
+    expect-equals "application/x-www-form-urlencoded"
+        (request.headers.single "Content-Type")
+    expect-equals "username=alice&password=p%20w" request.body.to-string
 
 test-multi-tag-and-close:
   with-server: | server/TestServer |

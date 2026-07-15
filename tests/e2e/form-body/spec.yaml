@@ -1,0 +1,46 @@
+openapi: 3.1.0
+info:
+  title: Form-encoded request bodies
+  version: 1.0.0
+paths:
+  /login:
+    post:
+      operationId: login
+      tags: [items]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: OK
+  /register:
+    post:
+      operationId: register
+      tags: [items]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Credentials'
+      responses:
+        '200':
+          description: OK
+components:
+  schemas:
+    Credentials:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string

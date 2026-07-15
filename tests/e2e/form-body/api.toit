@@ -1,6 +1,7 @@
 import http
 import net
 import openapi-runtime
+import .models as models
 
 class Api extends openapi-runtime.ApiBase:
   items-api_/ItemsApi? := null
@@ -27,9 +28,9 @@ class ItemsApi:
   constructor client/openapi-runtime.ApiClient:
     api-client_ = client
 
-  /** Variant of $(upload body) that returns the raw HTTP response. */
-  upload --raw/True body/ByteArray -> http.Response:
-    path := "/upload"
+  /** Variant of $(login body) that returns the raw HTTP response. */
+  login --raw/True body/Map -> http.Response:
+    path := "/login"
     headers := http.Headers
     query-params := []
     cookie-params := []
@@ -37,12 +38,28 @@ class ItemsApi:
         --method="POST"
         --query-params=query-params
         --header-params=headers
-        --form-params={:}
-        --content-type="application/octet-stream"
-        --body=body
+        --form-params=body
+        --content-type="application/x-www-form-urlencoded"
 
-  upload body/ByteArray:
-    upload --raw body
+  login body/Map:
+    login --raw body
+    return null
+
+  /** Variant of $(register body) that returns the raw HTTP response. */
+  register --raw/True body/models.Credentials -> http.Response:
+    path := "/register"
+    headers := http.Headers
+    query-params := []
+    cookie-params := []
+    return api-client_.invoke-api --path=path
+        --method="POST"
+        --query-params=query-params
+        --header-params=headers
+        --form-params=body.to-json
+        --content-type="application/x-www-form-urlencoded"
+
+  register body/models.Credentials:
+    register --raw body
     return null
 
 

@@ -33,13 +33,12 @@ class ItemsApi:
     headers := http.Headers
     query-params := []
     cookie-params := []
-    headers.set "Content-Type" "application/json"
     return api-client_.invoke-api --path=path
         --method="POST"
         --query-params=query-params
         --header-params=headers
         --form-params={:}
-        --content-type=null
+        --content-type="application/octet-stream"
         --body=body
 
   upload body/ByteArray:

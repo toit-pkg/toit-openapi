@@ -35,7 +35,6 @@ class PetsApi:
     headers := http.Headers
     query-params := []
     cookie-params := []
-    headers.set "Content-Type" "application/json"
     payload := body.map: | it |
       it.to-json
     return api-client_.invoke-api --path=path
@@ -43,7 +42,7 @@ class PetsApi:
         --query-params=query-params
         --header-params=headers
         --form-params={:}
-        --content-type=null
+        --content-type="application/json"
         --body=json.encode payload
 
   create-pets body/List:

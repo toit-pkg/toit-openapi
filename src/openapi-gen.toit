@@ -669,21 +669,30 @@ class ApiGenerator:
 
     request-body-type/toit-gen.Ref? := null
     request-body-description/string? := null
-    // Non-null iff the body goes out as `application/json` — drives the
-    //   `json.encode (shape.encode body)` recursion in $build-operation-body_.
+    // Non-null iff the body has a schema (JSON or form-encoded) — drives
+    //   the `shape.encode body` recursion in $build-operation-body_: JSON
+    //   bodies are then json.encode'd, form bodies go out as form-params.
     //   For any other media type, the body parameter is a `ByteArray` that
     //   the runtime passes through verbatim.
     request-body-shape/WireShape_? := null
+    request-body-media-type/string? := null
     if operation.request-body:
       resolved := operation.request-body.resolved-request-body
       request-body-description = resolved.description
       content := resolved.content
-      if content.contains "application/json":
-        json-schema := content["application/json"].schema
-        request-body-type = type-resolver.resolve json-schema
+      if content.contains "application/json" or
+          content.contains "application/x-www-form-urlencoded":
+        request-body-media-type = content.contains "application/json"
+            ? "application/json"
+            : "application/x-www-form-urlencoded"
+        body-schema := content[request-body-media-type].schema
+        request-body-type = type-resolver.resolve body-schema
             --hint="$path-$(method)-request-body"
-        request-body-shape = type-resolver.shape-of json-schema
+        request-body-shape = type-resolver.shape-of body-schema
       else:
+        // Any other media type: the body parameter is a ByteArray the
+        //   runtime passes through verbatim.
+        if not content.is-empty: request-body-media-type = content.keys.first
         request-body-type = toit-gen.Ref type-resolver.byte-array-class
 
     response-info := response-info_ operation --hint="$path-$(method)-response"
@@ -723,6 +732,7 @@ class ApiGenerator:
             --params=raw-params
             --request-body-arg=raw-body-arg
             --request-body-shape=request-body-shape
+            --request-body-media-type=request-body-media-type
             --has-cookie=has-cookie
             --api-client-field=api-client-field
             --security-expr=security-expr)
@@ -864,6 +874,7 @@ class ApiGenerator:
       --params/List
       --request-body-arg/toit-gen.VarDefinition?
       --request-body-shape/WireShape_?=null
+      --request-body-media-type/string?=null
       --has-cookie/bool
       --api-client-field/toit-gen.VarDefinition
       --security-expr/toit-gen.Expression? -> toit-gen.Sequence:
@@ -904,38 +915,18 @@ class ApiGenerator:
       body.invoke (toit-gen.Ref headers-var) "set"
           --arguments=[toit-gen.Literal "Cookie", join-call]
 
-    if request-body-arg:
-      // headers.set "Content-Type" "application/json"
-      body.invoke (toit-gen.Ref headers-var) "set"
-          --arguments=[
-            toit-gen.Literal "Content-Type",
-            toit-gen.Literal "application/json",
-          ]
-
-    // return api-client_.invoke-api
-    //     --path=path
-    //     --method=<METHOD>
-    //     --query-params=query-params
-    //     --header-params=headers
-    //     --form-params={:}
-    //     --content-type=null
-    //     [--body=body]
-    invoke-args := [
-      toit-gen.Named.external "path" (toit-gen.Ref path-var),
-      toit-gen.Named.external "method" (toit-gen.Literal method.to-ascii-upper),
-      toit-gen.Named.external "query-params" (toit-gen.Ref query-var),
-      toit-gen.Named.external "header-params" (toit-gen.Ref headers-var),
-      toit-gen.Named.external "form-params" (toit-gen.Literal {:}),
-      toit-gen.Named.external "content-type" (toit-gen.Literal null),
-    ]
-    if security-expr:
-      invoke-args.add (toit-gen.Named.external "security" security-expr)
+    // The Content-Type header is set by invoke-api from --content-type,
+    //   which carries the request body's media type (null without a body).
+    // A form-encoded body goes out via --form-params; every other body
+    //   via --body.
+    form-params-expr/toit-gen.Expression := toit-gen.Literal {:}
+    body-arg-expr/toit-gen.Expression? := null
     if request-body-arg:
       body-expr/toit-gen.Expression := toit-gen.Ref request-body-arg
+      is-form := request-body-media-type == "application/x-www-form-urlencoded"
       if request-body-shape:
-        // application/json: always JSON-encode. shape.encode walks the
-        //   wire shape (e.g. for a list of Pet → body.map: it.to-json).
-        json-imp := ensure-json-import_
+        // shape.encode walks the wire shape into JSON-encodable form
+        //   (e.g. for a list of Pet → body.map: it.to-json).
         encoded-form := request-body-shape.encode body-expr
         if request-body-shape.produces-block:
           // toit-gen's formatter can't squeeze a `.map: | it | …` block
@@ -943,9 +934,36 @@ class ApiGenerator:
           //   See TODO in toit-gen for the formatter fix.
           payload-vd := body.define "payload" encoded-form
           encoded-form = toit-gen.Ref payload-vd
-        body-expr = toit-gen.Call (json-imp.refer json-encode_)
-            --arguments=[encoded-form]
-      invoke-args.add (toit-gen.Named.external "body" body-expr)
+        if is-form:
+          form-params-expr = encoded-form
+        else:
+          json-imp := ensure-json-import_
+          body-arg-expr = toit-gen.Call (json-imp.refer json-encode_)
+              --arguments=[encoded-form]
+      else:
+        body-arg-expr = body-expr
+
+    // return api-client_.invoke-api
+    //     --path=path
+    //     --method=<METHOD>
+    //     --query-params=query-params
+    //     --header-params=headers
+    //     --form-params=<form body or {:}>
+    //     --content-type=<body media type>
+    //     [--security=[...]]
+    //     [--body=body]
+    invoke-args := [
+      toit-gen.Named.external "path" (toit-gen.Ref path-var),
+      toit-gen.Named.external "method" (toit-gen.Literal method.to-ascii-upper),
+      toit-gen.Named.external "query-params" (toit-gen.Ref query-var),
+      toit-gen.Named.external "header-params" (toit-gen.Ref headers-var),
+      toit-gen.Named.external "form-params" form-params-expr,
+      toit-gen.Named.external "content-type" (toit-gen.Literal request-body-media-type),
+    ]
+    if security-expr:
+      invoke-args.add (toit-gen.Named.external "security" security-expr)
+    if body-arg-expr:
+      invoke-args.add (toit-gen.Named.external "body" body-arg-expr)
 
     body.ret (toit-gen.Call (toit-gen.Ref api-client-field) "invoke-api" --arguments=invoke-args)
     return body

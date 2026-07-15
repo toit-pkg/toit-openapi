@@ -35,6 +35,10 @@ elsewhere. Track them here so they don't get forgotten.
   with the `core.` prefix (always-prefix is the simple shadow-proof
   option; collision-only prefixing needs name-collision detection in
   toit-gen's render pass).
+- **Models only have `constructor.from-json`.** Callers building a
+  request body by hand must round-trip through a Map
+  (`Credentials.from-json {"username": ...}`). Generate a real
+  constructor with named field parameters.
 - **(refactor)** Phase 5b open-coded a smaller version of the
   `convert-from-json` / `convert-to-json` recursion that already lives on
   `SchemaType` inside `gen.toit` (private). Now that we have a concrete
@@ -62,9 +66,12 @@ elsewhere. Track them here so they don't get forgotten.
    carrying `oauth2` scopes through. Prerequisite: fix
    `HttpBearerAuthCallback_`, which caches the first token forever and
    would defeat toit-oauth's token refresh — make it delegate instead.
-2. Other request-body media types: `multipart/form-data` and
-   `application/x-www-form-urlencoded`. Runtime already accepts
-   `--form-params`; the generator just needs to route to it.
+2. `multipart/form-data` request bodies. (`application/x-www-form-urlencoded`
+   is done: the generator routes the body schema through `--form-params`,
+   and `--content-type` now carries the real media type for every body,
+   fixing the hardcoded `application/json` header on binary bodies.)
+   Multipart needs an encoder in the runtime (boundary, parts, per-part
+   Content-Type) before the generator can route to it.
 3. Generated `package.yaml` / `README` / example `main`.
 4. `oneOf` / `allOf` / `anyOf` / `discriminator` model generation
    (depends on the toit-json-schema refactor above).
