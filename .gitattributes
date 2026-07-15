@@ -1,0 +1,3 @@
+# Snapshot goldens are byte-compared against generator output; never let
+# git convert line endings (Windows checkouts would otherwise CRLF them).
+* -text
