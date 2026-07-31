@@ -12,6 +12,7 @@ class Pet:
     name = data["name"]
 
   to-json -> Map:
-    return {"id": id, "name": name}
+    result := {"id": id, "name": name}
+    return result
 
 

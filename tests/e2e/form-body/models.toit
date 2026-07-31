@@ -12,6 +12,7 @@ class Credentials:
     password = data["password"]
 
   to-json -> Map:
-    return {"username": username, "password": password}
+    result := {"username": username, "password": password}
+    return result
 
 
