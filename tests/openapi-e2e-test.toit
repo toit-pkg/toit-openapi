@@ -327,9 +327,7 @@ test-nullable-ref-and-array-round-trip:
         --id=11
         --name="full"
         --category=cat
-        --has-category
         --tags=[tag]
-        --has-tags
     received2 := api.pets-api.create-pet sent2
     expect-equals 2 received2.id
     expect-null received2.category
