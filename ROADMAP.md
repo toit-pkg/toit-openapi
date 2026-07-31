@@ -57,16 +57,19 @@ acceptable final behavior when it changes wire semantics.
 
 Depends on the relevant Wave 0 layers.
 
-- [ ] **SCHEMA-001 — Separate presence from nullability.** Compute `required`
+- [x] **SCHEMA-001 — Separate presence from nullability.** Compute `required`
   and `allows-null` independently; preserve absent versus explicit-null values
-  through `from-json` and `to-json`.
-- [~] **SCHEMA-002 — Generate immutable models.** The former mixin-based
+  through `from-json` and `to-json`. Implemented on
+  `toit-json-schema:floitsch/001-property-presence` at `b80ead5` for the
+  currently supported object schemas; broader composition forms remain under
+  SCHEMA-004.
+- [x] **SCHEMA-002 — Generate immutable models.** The former mixin-based
   inheritance design no longer requires mutable public fields. Generate final
   readable fields, ordinary constructors, and an explicit way to
   set or clear optional nullable properties while preserving presence. Final
   fields and ordinary named constructors are implemented on
   `toit-json-schema:floitsch/000-final-model-fields` at `fd65a9d`; explicit
-  presence semantics remain in SCHEMA-001.
+  presence semantics are completed by SCHEMA-001 at `b80ead5`.
 - [ ] **SCHEMA-003 — Expose wire conversion through `Models`.** Move recursive
   JSON encode/decode knowledge out of OpenAPI's private `WireShape_` duplicate
   and expose it through the public schema-model generation result.
@@ -180,8 +183,11 @@ but each layer should remain independently reviewable and green.
 
 - `toit-gen`: `floitsch/000-escape-generated-text` (`2e6bd62`) →
   `floitsch/001-field-initializing-parameters` (`a00d735`).
-- `toit-json-schema`: `floitsch/000-final-model-fields` (`fd65a9d`), depending
-  on the two `toit-gen` layers above.
+- `toit-json-schema`: `floitsch/000-final-model-fields` (`fd65a9d`) →
+  `floitsch/001-property-presence` (`b80ead5`), depending on the two `toit-gen`
+  layers above.
 - `toit-openapi`: `floitsch/000-project-tracker` (`e4acf84`) →
   `floitsch/001-final-model-snapshots` (`481a0f5`). The second layer depends on
-  the schema and generator layers above.
+  the first schema and both generator layers above. The next layer is
+  `floitsch/002-property-presence-snapshots` (`033fca4`), depending on the
+  second schema layer.
