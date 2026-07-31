@@ -1,7 +1,10 @@
 import core
 
 class Owner:
-  name/string := ?
+  name/string
+
+  constructor --.name/string:
+
 
   constructor.from-json data/Map:
     name = data["name"]
@@ -11,10 +14,13 @@ class Owner:
 
 
 class Pet:
-  id/int := ?
-  name/string := ?
-  tag/string? := null
-  owner/Owner? := null
+  id/int
+  name/string
+  tag/string?
+  owner/Owner?
+
+  constructor --.id/int --.name/string --.tag/string?=null --.owner/Owner?=null:
+
 
   constructor.from-json data/Map:
     id = data["id"]

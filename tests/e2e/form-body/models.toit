@@ -1,8 +1,11 @@
 import core
 
 class Credentials:
-  username/string := ?
-  password/string := ?
+  username/string
+  password/string
+
+  constructor --.username/string --.password/string:
+
 
   constructor.from-json data/Map:
     username = data["username"]

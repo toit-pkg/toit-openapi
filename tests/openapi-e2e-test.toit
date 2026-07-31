@@ -323,9 +323,11 @@ test-nullable-ref-and-array-round-trip:
 
     cat := nullable-ref-models.Category.from-json {"id": 9, "name": "dogs"}
     tag := nullable-ref-models.Tag.from-json {"name": "good"}
-    sent2 := nullable-ref-models.Pet.from-json {"id": 11, "name": "full"}
-    sent2.category = cat
-    sent2.tags = [tag]
+    sent2 := nullable-ref-models.Pet
+        --id=11
+        --name="full"
+        --category=cat
+        --tags=[tag]
     received2 := api.pets-api.create-pet sent2
     expect-equals 2 received2.id
     expect-null received2.category
