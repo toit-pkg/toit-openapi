@@ -310,8 +310,8 @@ test-nullable-ref-and-array-round-trip:
 
     request1 := server.recorded[0]
     decoded1 := json.decode request1.body
-    expect-null decoded1["category"]
-    expect-null decoded1["tags"]
+    expect (not decoded1.contains "category")
+    expect (not decoded1.contains "tags")
 
     // Second reply sends an explicit null for the ref and a populated array;
     //   both forms must round-trip.

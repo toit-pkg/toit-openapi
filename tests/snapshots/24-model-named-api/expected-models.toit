@@ -10,6 +10,7 @@ class Api:
     version = data["version"]
 
   to-json -> Map:
-    return {"version": version}
+    result := {"version": version}
+    return result
 
 

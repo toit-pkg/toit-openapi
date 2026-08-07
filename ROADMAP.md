@@ -38,11 +38,11 @@ acceptable final behavior when it changes wire semantics.
   literals, interpolation text, and Toitdoc content containing quotes,
   backslashes, dollar signs, control characters, newlines, or comment
   terminators. Includes adversarial render-and-analyze tests. Implemented on
-  `toit-gen:floitsch/000-escape-generated-text` at `2e6bd62`.
+  `toit-gen:floitsch/000-escape-generated-text` at `a02f7c0`.
 - [x] **GEN-002 — Represent field-initializing constructor parameters.** Add
   `.field` and `--.field=default` parameters to the AST and renderer so
   immutable generated classes can expose ordinary constructors. Implemented
-  on `toit-gen:floitsch/001-field-initializing-parameters` at `a00d735`.
+  on `toit-gen:floitsch/001-field-initializing-parameters` at `1385a69`.
 - [ ] **GEN-003 — Complete qualified core/import rendering.** Make imported
   references work consistently in every expression and type position, and
   support an always-prefixed `core` import so generated schema names cannot
@@ -57,16 +57,19 @@ acceptable final behavior when it changes wire semantics.
 
 Depends on the relevant Wave 0 layers.
 
-- [ ] **SCHEMA-001 — Separate presence from nullability.** Compute `required`
+- [x] **SCHEMA-001 — Separate presence from nullability.** Compute `required`
   and `allows-null` independently; preserve absent versus explicit-null values
-  through `from-json` and `to-json`.
-- [~] **SCHEMA-002 — Generate immutable models.** The former mixin-based
+  through `from-json` and `to-json`. Implemented on
+  `toit-json-schema:floitsch/001-property-presence` at `fa787ad` for the
+  currently supported object schemas; broader composition forms remain under
+  SCHEMA-004.
+- [x] **SCHEMA-002 — Generate immutable models.** The former mixin-based
   inheritance design no longer requires mutable public fields. Generate final
   readable fields, ordinary constructors, and an explicit way to
   set or clear optional nullable properties while preserving presence. Final
   fields and ordinary named constructors are implemented on
   `toit-json-schema:floitsch/000-final-model-fields` at `fd65a9d`; explicit
-  presence semantics remain in SCHEMA-001.
+  presence semantics are completed by SCHEMA-001 at `fa787ad`.
 - [ ] **SCHEMA-003 — Expose wire conversion through `Models`.** Move recursive
   JSON encode/decode knowledge out of OpenAPI's private `WireShape_` duplicate
   and expose it through the public schema-model generation result.
@@ -178,10 +181,13 @@ but each layer should remain independently reviewable and green.
 
 ## Active stack coordinates
 
-- `toit-gen`: `floitsch/000-escape-generated-text` (`2e6bd62`) →
-  `floitsch/001-field-initializing-parameters` (`a00d735`).
-- `toit-json-schema`: `floitsch/000-final-model-fields` (`fd65a9d`), depending
-  on the two `toit-gen` layers above.
+- `toit-gen`: `floitsch/000-escape-generated-text` (`a02f7c0`) →
+  `floitsch/001-field-initializing-parameters` (`1385a69`).
+- `toit-json-schema`: `floitsch/000-final-model-fields` (`fd65a9d`) →
+  `floitsch/001-property-presence` (`fa787ad`), depending on the two `toit-gen`
+  layers above.
 - `toit-openapi`: `floitsch/000-project-tracker` (`e4acf84`) →
   `floitsch/001-final-model-snapshots` (`481a0f5`). The second layer depends on
-  the schema and generator layers above.
+  the first schema and both generator layers above. The next layer is
+  `floitsch/002-property-presence-snapshots` (`033fca4`), depending on the
+  second schema layer.

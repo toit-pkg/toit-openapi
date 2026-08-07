@@ -10,7 +10,8 @@ class Owner:
     name = data["name"]
 
   to-json -> Map:
-    return {"name": name}
+    result := {"name": name}
+    return result
 
 
 class Pet:
@@ -29,6 +30,11 @@ class Pet:
     owner = ((data.get "owner") == null) ? null : (Owner.from-json (data.get "owner"))
 
   to-json -> Map:
-    return {"id": id, "name": name, "tag": tag, "owner": (owner == null) ? null : owner.to-json}
+    result := {"id": id, "name": name}
+    if (tag != null):
+      result["tag"] = tag
+    if (owner != null):
+      result["owner"] = (owner == null) ? null : owner.to-json
+    return result
 
 

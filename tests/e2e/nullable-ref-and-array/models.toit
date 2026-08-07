@@ -12,7 +12,12 @@ class Category:
     name = data.get "name"
 
   to-json -> Map:
-    return {"id": id, "name": name}
+    result := {:}
+    if (id != null):
+      result["id"] = id
+    if (name != null):
+      result["name"] = name
+    return result
 
 
 class Tag:
@@ -25,7 +30,10 @@ class Tag:
     name = data.get "name"
 
   to-json -> Map:
-    return {"name": name}
+    result := {:}
+    if (name != null):
+      result["name"] = name
+    return result
 
 
 class Pet:
@@ -45,7 +53,12 @@ class Pet:
       Tag.from-json it)
 
   to-json -> Map:
-    return {"id": id, "name": name, "category": (category == null) ? null : category.to-json, "tags": (tags == null) ? null : (tags.map: | it |
-      it.to-json)}
+    result := {"id": id, "name": name}
+    if (category != null):
+      result["category"] = (category == null) ? null : category.to-json
+    if (tags != null):
+      result["tags"] = (tags == null) ? null : (tags.map: | it |
+        it.to-json)
+    return result
 
 
