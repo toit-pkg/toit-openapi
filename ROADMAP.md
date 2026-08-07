@@ -39,14 +39,18 @@ acceptable final behavior when it changes wire semantics.
   backslashes, dollar signs, control characters, newlines, or comment
   terminators. Includes adversarial render-and-analyze tests. Implemented on
   `toit-gen:floitsch/000-escape-generated-text` at `2e6bd62`.
-- [ ] **GEN-002 — Complete qualified core/import rendering.** Make imported
+- [x] **GEN-002 — Represent field-initializing constructor parameters.** Add
+  `.field` and `--.field=default` parameters to the AST and renderer so
+  immutable generated classes can expose ordinary constructors. Implemented
+  on `toit-gen:floitsch/001-field-initializing-parameters` at `a00d735`.
+- [ ] **GEN-003 — Complete qualified core/import rendering.** Make imported
   references work consistently in every expression and type position, and
   support an always-prefixed `core` import so generated schema names cannot
   shadow `Map`, `List`, or other core types.
-- [ ] **GEN-003 — Validate ASTs before rendering.** Report structured errors
+- [ ] **GEN-004 — Validate ASTs before rendering.** Report structured errors
   for unsupported or internally inconsistent AST shapes instead of failing
   partway through output with generic exceptions.
-- [ ] **GEN-004 — Make filesystem generation atomic.** Render completely before
+- [ ] **GEN-005 — Make filesystem generation atomic.** Render completely before
   replacing output files and close streams reliably on failures.
 
 ## Wave 1: schema-model foundation (`toit-json-schema`)
@@ -56,10 +60,13 @@ Depends on the relevant Wave 0 layers.
 - [ ] **SCHEMA-001 — Separate presence from nullability.** Compute `required`
   and `allows-null` independently; preserve absent versus explicit-null values
   through `from-json` and `to-json`.
-- [ ] **SCHEMA-002 — Generate immutable models.** The former mixin-based
+- [~] **SCHEMA-002 — Generate immutable models.** The former mixin-based
   inheritance design no longer requires mutable public fields. Generate final
-  backing fields, public getters, ordinary constructors, and an explicit way to
-  set or clear optional nullable properties while preserving presence.
+  readable fields, ordinary constructors, and an explicit way to
+  set or clear optional nullable properties while preserving presence. Final
+  fields and ordinary named constructors are implemented on
+  `toit-json-schema:floitsch/000-final-model-fields` at `fd65a9d`; explicit
+  presence semantics remain in SCHEMA-001.
 - [ ] **SCHEMA-003 — Expose wire conversion through `Models`.** Move recursive
   JSON encode/decode knowledge out of OpenAPI's private `WireShape_` duplicate
   and expose it through the public schema-model generation result.
@@ -158,7 +165,7 @@ Can proceed in parallel with most of Wave 1.
 
 The initial intended order is:
 
-1. `toit-gen`: GEN-001 → GEN-002 → GEN-003 → GEN-004.
+1. `toit-gen`: GEN-001 → GEN-002 → GEN-003 → GEN-004 → GEN-005.
 2. `toit-json-schema`: SCHEMA-001 → SCHEMA-002 → SCHEMA-003, with composition,
    diagnostics, and coverage layered above them.
 3. `toit-openapi-runtime`: CI first, then parameter serialization, response
@@ -168,3 +175,13 @@ The initial intended order is:
 
 Items may move between adjacent PRs when a testable change cannot be separated,
 but each layer should remain independently reviewable and green.
+
+## Active stack coordinates
+
+- `toit-gen`: `floitsch/000-escape-generated-text` (`2e6bd62`) →
+  `floitsch/001-field-initializing-parameters` (`a00d735`).
+- `toit-json-schema`: `floitsch/000-final-model-fields` (`fd65a9d`), depending
+  on the two `toit-gen` layers above.
+- `toit-openapi`: `floitsch/000-project-tracker` (`e4acf84`) →
+  `floitsch/001-final-model-snapshots` (`481a0f5`). The second layer depends on
+  the schema and generator layers above.

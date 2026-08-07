@@ -1,8 +1,11 @@
 import core
 
 class Category:
-  id/int? := null
-  name/string? := null
+  id/int?
+  name/string?
+
+  constructor --.id/int?=null --.name/string?=null:
+
 
   constructor.from-json data/Map:
     id = data.get "id"
@@ -13,7 +16,10 @@ class Category:
 
 
 class Tag:
-  name/string? := null
+  name/string?
+
+  constructor --.name/string?=null:
+
 
   constructor.from-json data/Map:
     name = data.get "name"
@@ -23,10 +29,13 @@ class Tag:
 
 
 class Pet:
-  id/int := ?
-  name/string := ?
-  category/Category? := null
-  tags/List? := null
+  id/int
+  name/string
+  category/Category?
+  tags/List?
+
+  constructor --.id/int --.name/string --.category/Category?=null --.tags/List?=null:
+
 
   constructor.from-json data/Map:
     id = data["id"]

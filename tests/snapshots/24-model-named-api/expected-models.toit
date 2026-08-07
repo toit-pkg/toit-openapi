@@ -1,7 +1,10 @@
 import core
 
 class Api:
-  version/string := ?
+  version/string
+
+  constructor --.version/string:
+
 
   constructor.from-json data/Map:
     version = data["version"]
