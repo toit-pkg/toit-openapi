@@ -3,6 +3,7 @@
 // found in the tests/LICENSE file.
 
 import expect show *
+import host
 import host.directory
 import host.file
 import host.os
@@ -104,12 +105,11 @@ list-fixtures_ root/string -> List:
 /// Returns a map from generated filename ("api.toit", "models.toit", ...) to
 /// its source string.
 generate_ spec-path/string -> Map:
-  tmp-dir := directory.mkdtemp "/tmp/openapi-snapshot-"
-  try:
+  files := {:}
+  host.with-tmp-directory "/tmp/openapi-snapshot-": | tmp-dir |
     gen.main [spec-path, tmp-dir]
     src-dir := "$tmp-dir/src"
     expect (file.is-directory src-dir) --message="generator did not write $src-dir"
-    files := {:}
     stream := directory.DirectoryStream src-dir
     try:
       while name := stream.next:
@@ -118,6 +118,4 @@ generate_ spec-path/string -> Map:
           files[name] = (file.read-contents path).to-string
     finally:
       stream.close
-    return files
-  finally:
-    directory.rmdir --recursive tmp-dir
+  return files

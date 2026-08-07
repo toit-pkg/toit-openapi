@@ -3,7 +3,7 @@
 // found in the tests/LICENSE file.
 
 import expect show *
-import host.directory
+import host
 import host.file
 import host.pipe
 import openapi-gen.openapi-gen as gen
@@ -30,8 +30,7 @@ The temp dir lives under `tests/` so the analyzer can resolve
   `openapi-runtime` and the rest via `tests/package.yaml`.
 */
 test-generates spec-path/string --expected-classes/List --expected-models/List:
-  tmp-dir := directory.mkdtemp "tests/.openapi-gen-test-"
-  try:
+  host.with-tmp-directory "tests/.openapi-gen-test-": | tmp-dir |
     gen.main [spec-path, tmp-dir]
     api-path := "$tmp-dir/src/api.toit"
     expect (file.is-file api-path) --message="generator did not write $api-path"
@@ -53,5 +52,3 @@ test-generates spec-path/string --expected-classes/List --expected-models/List:
     exit-code := pipe.run-program ["toit", "analyze", "--project-root=tests", api-path]
     expect (exit-code == 0)
         --message="generated client for $spec-path does not analyze cleanly"
-  finally:
-    directory.rmdir --recursive tmp-dir
