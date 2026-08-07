@@ -2,6 +2,9 @@
 
 OpenAPI 3.1 spec parser and Toit client-code generator.
 
+Development status and the cross-repository implementation plan are tracked in
+[ROADMAP.md](ROADMAP.md).
+
 This package contains:
 
 - `src/openapi.toit` — an in-memory model and parser for OpenAPI 3.1 documents,
