@@ -33,8 +33,8 @@ class ItemsApi:
     headers := http.Headers
     query-params := []
     cookie-params := []
-    cookie-params.add "session=$session"
-    cookie-params.add "csrf=$csrf"
+    cookie-params.add "session=$(session)"
+    cookie-params.add "csrf=$(csrf)"
     headers.set "Cookie" (cookie-params.join "; ")
     return api-client_.invoke-api --path=path
         --method="GET"
