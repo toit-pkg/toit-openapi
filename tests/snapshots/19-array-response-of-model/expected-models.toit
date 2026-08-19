@@ -1,17 +1,17 @@
 import core
 
 class Pet:
-  id/int
-  name/string
+  id/core.int
+  name/core.string
 
-  constructor --.id/int --.name/string:
+  constructor --.id/core.int --.name/core.string:
 
 
-  constructor.from-json data/Map:
+  constructor.from-json data/core.Map:
     id = data["id"]
     name = data["name"]
 
-  to-json -> Map:
+  to-json -> core.Map:
     result := {"id": id, "name": name}
     return result
 

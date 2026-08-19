@@ -1,17 +1,17 @@
 import core
 
 class Credentials:
-  username/string
-  password/string
+  username/core.string
+  password/core.string
 
-  constructor --.username/string --.password/string:
+  constructor --.username/core.string --.password/core.string:
 
 
-  constructor.from-json data/Map:
+  constructor.from-json data/core.Map:
     username = data["username"]
     password = data["password"]
 
-  to-json -> Map:
+  to-json -> core.Map:
     result := {"username": username, "password": password}
     return result
 

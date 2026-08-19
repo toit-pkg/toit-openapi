@@ -1,17 +1,17 @@
 import core
 
 class Category:
-  id/int?
-  name/string?
+  id/core.int?
+  name/core.string?
 
-  constructor --.id/int?=null --.name/string?=null:
+  constructor --.id/core.int?=null --.name/core.string?=null:
 
 
-  constructor.from-json data/Map:
+  constructor.from-json data/core.Map:
     id = data.get "id"
     name = data.get "name"
 
-  to-json -> Map:
+  to-json -> core.Map:
     result := {:}
     if (id != null):
       result["id"] = id
@@ -21,15 +21,15 @@ class Category:
 
 
 class Tag:
-  name/string?
+  name/core.string?
 
-  constructor --.name/string?=null:
+  constructor --.name/core.string?=null:
 
 
-  constructor.from-json data/Map:
+  constructor.from-json data/core.Map:
     name = data.get "name"
 
-  to-json -> Map:
+  to-json -> core.Map:
     result := {:}
     if (name != null):
       result["name"] = name
@@ -37,22 +37,22 @@ class Tag:
 
 
 class Pet:
-  id/int
-  name/string
+  id/core.int
+  name/core.string
   category/Category?
-  tags/List?
+  tags/core.List?
 
-  constructor --.id/int --.name/string --.category/Category?=null --.tags/List?=null:
+  constructor --.id/core.int --.name/core.string --.category/Category?=null --.tags/core.List?=null:
 
 
-  constructor.from-json data/Map:
+  constructor.from-json data/core.Map:
     id = data["id"]
     name = data["name"]
     category = ((data.get "category") == null) ? null : (Category.from-json (data.get "category"))
     tags = ((data.get "tags") == null) ? null : ((data.get "tags").map: | it |
       Tag.from-json it)
 
-  to-json -> Map:
+  to-json -> core.Map:
     result := {"id": id, "name": name}
     if (category != null):
       result["category"] = (category == null) ? null : category.to-json
