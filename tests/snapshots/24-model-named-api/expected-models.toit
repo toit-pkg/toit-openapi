@@ -1,15 +1,15 @@
 import core
 
 class Api:
-  version/string
+  version/core.string
 
-  constructor --.version/string:
+  constructor --.version/core.string:
 
 
-  constructor.from-json data/Map:
+  constructor.from-json data/core.Map:
     version = data["version"]
 
-  to-json -> Map:
+  to-json -> core.Map:
     result := {"version": version}
     return result
 

@@ -1,35 +1,35 @@
 import core
 
 class Owner:
-  name/string
+  name/core.string
 
-  constructor --.name/string:
+  constructor --.name/core.string:
 
 
-  constructor.from-json data/Map:
+  constructor.from-json data/core.Map:
     name = data["name"]
 
-  to-json -> Map:
+  to-json -> core.Map:
     result := {"name": name}
     return result
 
 
 class Pet:
-  id/int
-  name/string
-  tag/string?
+  id/core.int
+  name/core.string
+  tag/core.string?
   owner/Owner?
 
-  constructor --.id/int --.name/string --.tag/string?=null --.owner/Owner?=null:
+  constructor --.id/core.int --.name/core.string --.tag/core.string?=null --.owner/Owner?=null:
 
 
-  constructor.from-json data/Map:
+  constructor.from-json data/core.Map:
     id = data["id"]
     name = data["name"]
     tag = data.get "tag"
     owner = ((data.get "owner") == null) ? null : (Owner.from-json (data.get "owner"))
 
-  to-json -> Map:
+  to-json -> core.Map:
     result := {"id": id, "name": name}
     if (tag != null):
       result["tag"] = tag

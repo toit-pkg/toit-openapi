@@ -609,7 +609,7 @@ class ApiGenerator:
     //   return pets-api_
     body := toit-gen.Sequence
     init := toit-gen.Sequence
-    init.assign field
+    init.assign (toit-gen.Ref field)
         (toit-gen.Call (toit-gen.Ref tag-class) --arguments=[toit-gen.Ref api-client-field])
     body.iff (toit-gen.Unary "not" (toit-gen.Ref field)) init
     body.ret (toit-gen.Ref field)
@@ -630,7 +630,7 @@ class ApiGenerator:
     client-param := toit-gen.VarDefinition.parameter "client"
         --type=(runtime_.refer api-client_)
     body := toit-gen.Sequence
-    body.assign api-client-field (toit-gen.Ref client-param)
+    body.assign (toit-gen.Ref api-client-field) (toit-gen.Ref client-param)
     tag-class.add-constructor --parameters=[client-param] body
 
     operations.do: | entry/List |
@@ -960,7 +960,7 @@ class ApiGenerator:
         args.add (toit-gen.Named.external "style" (toit-gen.Literal param.style))
       if param.explode:
         args.add (toit-gen.Named.external "explode" (toit-gen.Literal true))
-      branch.assign path-var
+      branch.assign (toit-gen.Ref path-var)
           (toit-gen.Call (toit-gen.Ref path-var) "replace"
               --arguments=[
                 toit-gen.Named.external "all" (toit-gen.Literal true),
