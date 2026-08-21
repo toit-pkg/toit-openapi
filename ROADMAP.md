@@ -53,7 +53,7 @@ acceptable final behavior when it changes wire semantics.
 - [x] **GEN-004 — Validate ASTs before rendering.** Report structured errors
   for unsupported or internally inconsistent AST shapes instead of failing
   partway through output with generic exceptions. Implemented on
-  `toit-gen:floitsch/004-ast-validation` at `503df24`.
+  `toit-gen:floitsch/004-ast-validation` at `59055b9`.
 - [ ] **GEN-005 — Make filesystem generation atomic.** Render completely before
   replacing output files and close streams reliably on failures.
 
@@ -189,7 +189,7 @@ The initial GEN-001 through GEN-003, SCHEMA-001 through SCHEMA-002, and matching
 OpenAPI snapshot stacks have merged. Current work starts the next generator
 layer:
 
-- `toit-gen`: `floitsch/004-ast-validation` (`503df24`, GEN-004), based on
+- `toit-gen`: `floitsch/004-ast-validation` (`59055b9`, GEN-004), based on
   `main` at `7acf0ca`.
 - `toit-json-schema`: no active stack; `main` includes qualified core types at
   `19b918a`.
