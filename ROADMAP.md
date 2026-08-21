@@ -43,13 +43,17 @@ acceptable final behavior when it changes wire semantics.
   `.field` and `--.field=default` parameters to the AST and renderer so
   immutable generated classes can expose ordinary constructors. Implemented
   on `toit-gen:floitsch/001-field-initializing-parameters` at `1385a69`.
-- [ ] **GEN-003 — Complete qualified core/import rendering.** Make imported
+- [x] **GEN-003 — Complete qualified core/import rendering.** Make imported
   references work consistently in every expression and type position, and
   support an always-prefixed `core` import so generated schema names cannot
-  shadow `Map`, `List`, or other core types.
-- [ ] **GEN-004 — Validate ASTs before rendering.** Report structured errors
+  shadow `Map`, `List`, or other core types. Implemented by
+  `toit-gen` at `6d6bc86`, adopted by `toit-json-schema` at `19b918a`, and
+  reflected in `toit-openapi` snapshots at `55e74c8`. Generated-source gold
+  coverage landed in `toit-gen` at `7acf0ca`.
+- [x] **GEN-004 — Validate ASTs before rendering.** Report structured errors
   for unsupported or internally inconsistent AST shapes instead of failing
-  partway through output with generic exceptions.
+  partway through output with generic exceptions. Implemented on
+  `toit-gen:floitsch/004-ast-validation` at `59055b9`.
 - [ ] **GEN-005 — Make filesystem generation atomic.** Render completely before
   replacing output files and close streams reliably on failures.
 
@@ -181,13 +185,13 @@ but each layer should remain independently reviewable and green.
 
 ## Active stack coordinates
 
-- `toit-gen`: `floitsch/000-escape-generated-text` (`a02f7c0`) →
-  `floitsch/001-field-initializing-parameters` (`1385a69`).
-- `toit-json-schema`: `floitsch/000-final-model-fields` (`fd65a9d`) →
-  `floitsch/001-property-presence` (`fa787ad`), depending on the two `toit-gen`
-  layers above.
-- `toit-openapi`: `floitsch/000-project-tracker` (`e4acf84`) →
-  `floitsch/001-final-model-snapshots` (`481a0f5`). The second layer depends on
-  the first schema and both generator layers above. The next layer is
-  `floitsch/002-property-presence-snapshots` (`033fca4`), depending on the
-  second schema layer.
+The initial GEN-001 through GEN-003, SCHEMA-001 through SCHEMA-002, and matching
+OpenAPI snapshot stacks have merged. Current work starts the next generator
+layer:
+
+- `toit-gen`: `floitsch/004-ast-validation` (`59055b9`, GEN-004), based on
+  `main` at `7acf0ca`.
+- `toit-json-schema`: no active stack; `main` includes qualified core types at
+  `19b918a`.
+- `toit-openapi`: `floitsch/005-roadmap-gen-004`, based on `main` at `55e74c8`,
+  records the completed cross-repository wave and the next generator layer.
